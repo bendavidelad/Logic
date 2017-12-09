@@ -6,6 +6,7 @@
 from propositions.syntax import Formula as PropositionalFormula
 from predicates.util import *
 
+EQU = "="
 
 def is_unary(s):
     """ Is s a unary operator? """
@@ -15,6 +16,7 @@ def is_unary(s):
 def is_term(s):
     return type(s) is Term
 
+
 def is_binary(s):
     """ Is s a binary boolean operator? """
     return s == '&' or s == '|' or s == '->'
@@ -22,7 +24,7 @@ def is_binary(s):
 
 def is_equality(s):
     """ Is s the equality relation? """
-    return s == "="
+    return s == EQU
 
 
 def is_quantifier(s):
@@ -170,8 +172,6 @@ class Term:
             # Ex12
 
 
-
-
 class Formula:
     """ A Formula in first-order logic """
 
@@ -219,7 +219,7 @@ class Formula:
                 x = x + ',' + i.infix()
             return self.root + '(' + x + ')'
         elif is_equality(self.root):
-            return self.first.infix() + "=" + self.second.infix()
+            return self.first.infix() + EQU + self.second.infix()
         elif is_quantifier(self.root):
             return self.root + self.variable + '[' + self.predicate.infix() + ']'
         elif is_relation(self.root):
@@ -320,22 +320,20 @@ class Formula:
                     closed_par += 1
                 i += 1
             predicate, reminder = Formula.parse_prefix(s[last_comma + 1:])
-            if reminder[0] == '=':
+            if reminder[0] == EQU:
                 x = Term.parse_prefix(reminder[1:])
-                predicate = Formula("=", predicate, x[0])
+                predicate = Formula(EQU, predicate, x[0])
                 reminder = x[1]
             return Formula(s[0], variable, predicate), reminder[1:]
 
         elif is_unary(s[0]):
-            if "=" in s:
-                x = Formula.parse_prefix(s[s.index("=") + 1:])
-                y = Formula.parse_prefix(s[1:s.index("=")])
-                return [Formula(s[0], Formula('=', y[0], x[0])),
-                        x[1]]
+            if EQU in s:
+                x = Formula.parse_prefix(s[s.index(EQU) + 1:])
+                y = Formula.parse_prefix(s[1:s.index(EQU)])
+                return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
             else:
                 x = Formula.parse_prefix(s[1:])
                 return [Formula(s[0], x[0]), x[1]]
-                # elif is_binary(s[0]):
 
     @staticmethod
     def parse(s):
@@ -370,7 +368,6 @@ class Formula:
             if self.variable in x:
                 x.remove(self.variable)
             return x
-
 
     def functions(self):
         """ Return a set of pairs (function_name, arity) for all function names
