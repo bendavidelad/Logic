@@ -8,6 +8,7 @@ from predicates.util import *
 
 EQU = "="
 
+
 def is_unary(s):
     """ Is s a unary operator? """
     return s == '~'
@@ -158,8 +159,7 @@ class Term:
             each variable v that appears in the dictionary substitution_map are
             replaced with the term substitution_map[v] """
         for variable in substitution_map:
-            assert is_variable(variable) and \
-                   type(substitution_map[variable]) is Term
+            assert is_variable(variable) and type(substitution_map[variable]) is Term
             # Task 9.1
 
     def substitute_constants(self, substitution_map):
