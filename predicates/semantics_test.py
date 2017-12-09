@@ -71,4 +71,7 @@ def test_is_model_of(debug):
         print('... is said', '' if result else 'not', 'to satisfy', formula)
     assert not result
 
+# test_evaluate_term(True)
+
 # test_evaluate_formula(True)
+test_is_model_of(True)
