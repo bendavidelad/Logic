@@ -172,6 +172,108 @@ class Term:
             # Ex12
 
 
+def unary(s):
+    if EQU in s:
+        x = Formula.parse_prefix(s[s.index(EQU) + 1:])
+        y = Formula.parse_prefix(s[1:s.index(EQU)])
+        return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
+    else:
+        x = Formula.parse_prefix(s[1:])
+        return [Formula(s[0], x[0]), x[1]]
+
+
+def quantifier(s):
+    i = 2
+    while is_variable(s[1:i]):
+        i += 1
+    i = i - 1
+    variable = s[1:i]
+    opened_par, closed_par = 0, 0
+    last_comma = i
+    while not (opened_par == closed_par != 0):
+        if s[i] == "[":
+            opened_par += 1
+        elif s[i] == "]":
+            closed_par += 1
+        i += 1
+    predicate, reminder = Formula.parse_prefix(s[last_comma + 1:])
+    if reminder[0] == EQU:
+        x = Term.parse_prefix(reminder[1:])
+        predicate = Formula(EQU, predicate, x[0])
+        reminder = x[1]
+    return Formula(s[0], variable, predicate), reminder[1:]
+
+
+def function_or_reletion(s):
+    i = 1
+    while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
+        i += 1
+    i = i - 1
+    name = s[0:i]
+    opened_par = 0
+    closed_par = 0
+    lst = []
+    last_comma = i
+    while not (opened_par == closed_par != 0):
+        if s[i] == "(":
+            opened_par += 1
+        elif s[i] == ")":
+            closed_par += 1
+        elif s[i] == "," and opened_par < closed_par + 2:
+            lst.append(Formula.parse_prefix(s[last_comma + 1:i])[0])
+            last_comma = i
+        i += 1
+    if last_comma + 1 != i - 1:
+        lst.append(Formula.parse_prefix(s[last_comma + 1:i - 1])[0])
+
+    if is_relation(s[0]):
+        this_formula = Formula(name, lst)
+        return [this_formula, s[i:]]
+    else:
+        this_term = Term(name, lst)
+        return [this_term, s[i:]]
+
+
+def constant_or_variable(s):
+    i, j = 1, 0
+    if len(s) > 1:
+        while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
+            if is_equality(s[i]):
+                j = i
+            i += 1
+        if s[i - 1] == ',':
+            i -= 1
+        if j > 0:
+            if is_function((s[i])):
+                second = Formula.parse_prefix(s[i:])
+                return [Formula(s[j], Formula.parse_prefix(s[:j])[0], second[0]), second[1]]
+            return [Formula(s[j], Formula.parse_prefix(s[:j])[0], Formula.parse_prefix(s[j + 1:i + 1])[0]),
+                    s[i + 1:]]
+        return [(Term(s[0:i])), s[i:]]
+    return [(Term(s)), '']
+
+
+def binary(s):
+    global sign, first
+    i, mid, r_counter, l_counter = 0, 0, 0, 0
+    while not (l_counter == r_counter != 0) and i < len(s):
+        if s[i] == '(':
+            l_counter += 1
+        elif s[i] == ')':
+            r_counter += 1
+        elif is_binary(s[i]):
+            first = Formula.parse_prefix(s[l_counter - r_counter:i])
+            mid, sign = i, s[i]
+        elif is_binary(s[i:i + 2]):
+            first = Formula.parse_prefix(s[l_counter - r_counter:i])
+            mid, sign = i + 1, s[i:i + 2]
+        i += 1
+    second = Formula.parse_prefix(s[mid + 1:i - 1])
+    if first[1] != '' and first[1][0] == '=':
+        first[0] = Formula('=', first[0], Formula.parse_prefix(first[1][1:])[0])
+    return [Formula(sign, first[0], second[0]), second[1] + s[i:]]
+
+
 class Formula:
     """ A Formula in first-order logic """
 
@@ -214,22 +316,21 @@ class Formula:
         if is_constant(self.root) or is_variable(self.root):
             return self.root
         elif is_function(self.root):
-            x = self.arguments[0].infix()
+            args = self.arguments[0].infix()
             for i in self.arguments[1:]:
-                x = x + ',' + i.infix()
-            return self.root + '(' + x + ')'
+                args = args + ',' + i.infix()
+            return self.root + '(' + args + ')'
         elif is_equality(self.root):
             return self.first.infix() + EQU + self.second.infix()
         elif is_quantifier(self.root):
             return self.root + self.variable + '[' + self.predicate.infix() + ']'
         elif is_relation(self.root):
-            x = ''
+            args = ''
             if self.arguments:
-                x = self.arguments[0].infix()
-
+                args = self.arguments[0].infix()
                 for i in self.arguments[1:]:
-                    x = x + ',' + i.infix()
-            return self.root + '(' + x + ')'
+                    args = args + ',' + i.infix()
+            return self.root + '(' + args + ')'
         elif is_unary(self.root):
             return self.root + self.first.infix()
         elif is_binary(self.root):
@@ -241,108 +342,16 @@ class Formula:
             Return a pair: the parsed formula, and unparsed remainder of the
             string """
         # Task 7.4.1
-
         if s[0] == '(':
-            l_counter = 0
-            r_counter = 0
-            i = 0
-            mid = 0
-            first = Formula
-            while not (l_counter == r_counter != 0) and i < len(s):
-                if s[i] == '(':
-                    l_counter += 1
-                elif s[i] == ')':
-                    r_counter += 1
-                elif is_binary(s[i]):
-                    first = Formula.parse_prefix(s[l_counter - r_counter:i])
-                    mid = i
-                i += 1
-            y = Formula.parse_prefix(s[mid + 1:i - 1])
-            if first[1][0]=='=':
-                first[0]=Formula('=',first[0],Formula.parse_prefix(first[1][1:])[0])
-
-            return [Formula(s[mid], first[0], y[0]), y[1] + s[i:]]
+            return binary(s)
         elif is_constant(s[0]) or is_variable(s[0]):
-            i = 1
-            j = 0
-            if len(s) > 1:
-                while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
-                    if is_equality(s[i]):
-                        j = i
-                    i += 1
-                if s[i - 1] == ',':
-                    i -= 1
-                if j > 0:
-                    if is_function((s[i])):
-                        x = Formula.parse_prefix(s[i:])
-                        return [Formula(s[j], Formula.parse_prefix(s[:j])[0],x[0]),x[1]]
-
-                    else:
-
-                        return [Formula(s[j], Formula.parse_prefix(s[:j])[0],
-                                    Formula.parse_prefix(s[j + 1:i + 1])[0]), s[i + 1:]]
-                else:
-                    return [(Term(s[0:i])), s[i:]]
-            else:
-                return [(Term(s)), '']
+            return constant_or_variable(s)
         elif is_function(s[0]) or is_relation(s[0]):
-            i = 1
-            while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
-                i += 1
-            i = i - 1
-            name = s[0:i]
-            opened_par = 0
-            closed_par = 0
-            lst = []
-            last_comma = i
-            while not (opened_par == closed_par != 0):
-                if s[i] == "(":
-                    opened_par += 1
-                elif s[i] == ")":
-                    closed_par += 1
-                elif s[i] == "," and opened_par < closed_par + 2:
-                    lst.append(Formula.parse_prefix(s[last_comma + 1:i])[0])
-                    last_comma = i
-                i += 1
-            if last_comma + 1 != i - 1:
-                lst.append(Formula.parse_prefix(s[last_comma + 1:i - 1])[0])
-
-            if is_relation(s[0]):
-                this_formula = Formula(name, lst)
-                return [this_formula, s[i:]]
-            else:
-                this_term = Term(name, lst)
-                return [this_term, s[i:]]
-
+            return function_or_reletion(s)
         elif is_quantifier(s[0]):
-            i = 2
-            while is_variable(s[1:i]):
-                i += 1
-            i = i - 1
-            variable = s[1:i]
-            opened_par, closed_par = 0, 0
-            last_comma = i
-            while not (opened_par == closed_par != 0):
-                if s[i] == "[":
-                    opened_par += 1
-                elif s[i] == "]":
-                    closed_par += 1
-                i += 1
-            predicate, reminder = Formula.parse_prefix(s[last_comma + 1:])
-            if reminder[0] == EQU:
-                x = Term.parse_prefix(reminder[1:])
-                predicate = Formula(EQU, predicate, x[0])
-                reminder = x[1]
-            return Formula(s[0], variable, predicate), reminder[1:]
-
+            return quantifier(s)
         elif is_unary(s[0]):
-            if EQU in s:
-                x = Formula.parse_prefix(s[s.index(EQU) + 1:])
-                y = Formula.parse_prefix(s[1:s.index(EQU)])
-                return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
-            else:
-                x = Formula.parse_prefix(s[1:])
-                return [Formula(s[0], x[0]), x[1]]
+            return unary(s)
 
     @staticmethod
     def parse(s):
@@ -373,10 +382,10 @@ class Formula:
         elif is_binary(self.root):
             return self.first.free_variables() | self.second.free_variables()
         elif is_quantifier(self.root):
-            x = self.predicate.free_variables()
-            if self.variable in x:
-                x.remove(self.variable)
-            return x
+            ret = self.predicate.free_variables()
+            if self.variable in ret:
+                ret.remove(self.variable)
+            return ret
 
     def functions(self):
         """ Return a set of pairs (function_name, arity) for all function names
@@ -394,8 +403,7 @@ class Formula:
             dictionary substitution_map are replaced with the term
             substitution_map[v] """
         for variable in substitution_map:
-            assert is_variable(variable) and \
-                   type(substitution_map[variable]) is Term
+            assert is_variable(variable) and type(substitution_map[variable]) is Term
             # Task 9.2
 
     def substitute_constants(self, substitution_map):

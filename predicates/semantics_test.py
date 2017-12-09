@@ -74,4 +74,4 @@ def test_is_model_of(debug):
 # test_evaluate_term(True)
 
 # test_evaluate_formula(True)
-test_is_model_of(True)
+# test_is_model_of(True)
