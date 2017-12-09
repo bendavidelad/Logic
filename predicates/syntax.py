@@ -359,22 +359,16 @@ class Formula:
             for arg in self.arguments:
                 ret = ret | arg.variables()
             return ret
-            return self.first.free_variables() | self.second.free_variables()
         elif is_equality(self.root):
             return self.first.variables() | self.second.variables()
-
         elif is_unary(self.root):
             return self.first.free_variables() | self.second.free_variables()
-
         elif is_binary(self.root):
             return self.first.free_variables() | self.second.free_variables()
-
         elif is_quantifier(self.root):
-
             x = self.predicate.free_variables()
             if self.variable in x:
                 x.remove(self.variable)
-
             return x
 
 
