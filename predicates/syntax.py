@@ -258,6 +258,9 @@ class Formula:
                     mid = i
                 i += 1
             y = Formula.parse_prefix(s[mid + 1:i - 1])
+            if first[1][0]=='=':
+                first[0]=Formula('=',first[0],Formula.parse_prefix(first[1][1:])[0])
+
             return [Formula(s[mid], first[0], y[0]), y[1] + s[i:]]
         elif is_constant(s[0]) or is_variable(s[0]):
             i = 1
@@ -270,7 +273,13 @@ class Formula:
                 if s[i - 1] == ',':
                     i -= 1
                 if j > 0:
-                    return [Formula(s[j], Formula.parse_prefix(s[:j])[0],
+                    if is_function((s[i])):
+                        x = Formula.parse_prefix(s[i:])
+                        return [Formula(s[j], Formula.parse_prefix(s[:j])[0],x[0]),x[1]]
+
+                    else:
+
+                        return [Formula(s[j], Formula.parse_prefix(s[:j])[0],
                                     Formula.parse_prefix(s[j + 1:i + 1])[0]), s[i + 1:]]
                 else:
                     return [(Term(s[0:i])), s[i:]]
