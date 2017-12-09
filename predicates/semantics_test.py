@@ -7,10 +7,7 @@ from predicates.syntax import *
 from predicates.semantics import *
 
 def test_evaluate_term(debug=False):
-    model = Model({'0', '1'},
-                  {'plus': {('0', '0'): '0', ('0', '1'): '1', ('1', '1'): '0',
-                            ('1', '0'): '1'},
-                   'c': '1'})
+    model = Model({'0', '1'}, {'plus': {('0', '0'): '0', ('0', '1'): '1', ('1', '1'): '0', ('1', '0'): '1'}, 'c': '1'})
     if debug:
         print('In the model', model)
     for s,expected_value in [['c', '1'], ['plus(c,c)', '0'],
@@ -73,3 +70,5 @@ def test_is_model_of(debug):
     if debug:
         print('... is said', '' if result else 'not', 'to satisfy', formula)
     assert not result
+
+test_evaluate_formula(True)
