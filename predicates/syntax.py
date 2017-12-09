@@ -6,33 +6,44 @@
 from propositions.syntax import Formula as PropositionalFormula
 from predicates.util import *
 
+
 def is_unary(s):
     """ Is s a unary operator? """
     return s == '~'
+
+
+def is_term(s):
+    return type(s) is Term
 
 def is_binary(s):
     """ Is s a binary boolean operator? """
     return s == '&' or s == '|' or s == '->'
 
+
 def is_equality(s):
     """ Is s the equality relation? """
     return s == "="
+
 
 def is_quantifier(s):
     """ Is s a quantifier? """
     return s == "A" or s == "E"
 
+
 def is_relation(s):
     """ Is s a relation name? """
     return s[0] >= 'F' and s[0] <= 'T' and s.isalnum()
 
+
 def is_constant(s):
     """ Is s a constant name? """
-    return  ((s[0] >= '0' and s[0] <= '9') or (s[0] >= 'a' and s[0] <= 'd')) and s.isalnum()
+    return ((s[0] >= '0' and s[0] <= '9') or (s[0] >= 'a' and s[0] <= 'd')) and s.isalnum()
+
 
 def is_function(s):
     """ Is s a function name? """
     return s[0] >= 'f' and s[0] <= 't' and s.isalnum()
+
 
 def is_variable(s):
     """ Is s a variable name? """
@@ -57,36 +68,89 @@ class Term:
     def __repr__(self):
         """ Return the usual (functional) representation of self """
         # Task 7.1
+        return self.infix()
 
     def __eq__(self, other):
         return str(self) == str(other)
-        
+
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
         return hash(str(self))
 
+    def infix(self):
+        """ Return an infix representation of self """
+        if is_constant(self.root) or is_variable(self.root):
+            return self.root
+        elif is_function(self.root):
+            x = self.arguments[0].infix()
+            for i in self.arguments[1:]:
+                x = x + ',' + i.infix()
+            return self.root + '(' + x + ')'
+
     @staticmethod
     def parse_prefix(s):
         """ Parse a term from the prefix of a given string. Return a pair: the
             parsed term, and the unparsed remainder of the string """
         # Task 7.3.1
+        if is_constant(s[0]) or is_variable(s[0]):
+            i = 1
+            while (is_constant(s[0:i]) or is_variable((s[0:i]))) and i < len(s):
+                i += 1
+            if s[i - 1] == ',' or s[i - 1] == ']':
+                i -= 1
+            return (Term(s[0:i])), s[i:]
+        elif is_function(s[0]):
+            i = 1
+            while is_function(s[0:i]):
+                i += 1
+            i = i - 1
+            name = s[0:i]
+            opened_par = 0
+            closed_par = 0
+            lst = []
+            last_comma = i
+            while not (opened_par == closed_par != 0):
+                if s[i] == "(":
+                    opened_par += 1
+                elif s[i] == ")":
+                    closed_par += 1
+                elif s[i] == "," and opened_par < closed_par + 2:
+                    lst.append(Term.parse_prefix(s[last_comma + 1:i])[0])
+                    last_comma = i
+                i += 1
+            lst.append(Term.parse_prefix(s[last_comma + 1:i - 1])[0])
+            this_term = Term(name, lst)
+            return [this_term, s[i:]]
 
     @staticmethod
     def parse(s):
         """ Return a term parsed from its given string representation """
         # Task 7.3.2
+        res, s = Term.parse_prefix(s)
+        while s != '':
+            res, s = Term.parse_prefix(s)
+        return res
 
     def variables(self):
         """ Return the set of variables in this term """
         # Task 7.5
+        ret = set()
+        if is_variable(self.root):
+            return {self.root}
+
+        elif is_function(self.root):
+            for arg in self.arguments:
+                ret = ret | arg.variables()
+            return ret
+        return ret
 
     def functions(self):
         """ Return a set of pairs (function_name, arity) for all function names
             that appear in this term """
         # Task 8.1.1
-    
+
     def substitute_variables(self, substitution_map):
         """ Return a term obtained from this term where all the occurrences of
             each variable v that appears in the dictionary substitution_map are
@@ -94,7 +158,7 @@ class Term:
         for variable in substitution_map:
             assert is_variable(variable) and \
                    type(substitution_map[variable]) is Term
-        # Task 9.1
+            # Task 9.1
 
     def substitute_constants(self, substitution_map):
         """ Return a term obtained from this formula where all the occurrences
@@ -103,44 +167,73 @@ class Term:
         for constant in substitution_map:
             assert is_constant(constant) and \
                    type(substitution_map[constant]) is Term
-        # Ex12
+            # Ex12
+
+
 
 
 class Formula:
     """ A Formula in first-order logic """
-    
+
     def __init__(self, root, first=None, second=None):
-        if is_relation(root): # Populate self.root and self.arguments
+        if is_relation(root):  # Populate self.root and self.arguments
             assert second is None
             for x in first:
                 assert type(x) is Term
             self.root, self.arguments = root, first
-        elif is_equality(root): # Populate self.first and self.second
+        elif is_equality(root):  # Populate self.first and self.second
             assert type(first) is Term and type(second) is Term
             self.root, self.first, self.second = root, first, second
-        elif is_quantifier(root): # Populate self.variable and self.predicate
+        elif is_quantifier(root):  # Populate self.variable and self.predicate
             assert is_variable(first) and type(second) is Formula
             self.root, self.variable, self.predicate = root, first, second
-        elif is_unary(root): # Populate self.first
+        elif is_unary(root):  # Populate self.first
             assert type(first) is Formula and second is None
             self.root, self.first = root, first
-        else: # Populate self.first and self.second
+        else:  # Populate self.first and self.second
             assert is_binary(root) and type(first) is Formula and type(second) is Formula
-            self.root, self.first, self.second = root, first, second           
+            self.root, self.first, self.second = root, first, second
 
     def __repr__(self):
         """ Return the usual (infix for operators and equality, functional for
             other relations) representation of self """
-        # Task 7.2
+        return self.infix()
 
     def __eq__(self, other):
         return str(self) == str(other)
-        
+
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
         return hash(str(self))
+
+    def infix(self):
+        """ Return an infix representation of self """
+
+        if is_constant(self.root) or is_variable(self.root):
+            return self.root
+        elif is_function(self.root):
+            x = self.arguments[0].infix()
+            for i in self.arguments[1:]:
+                x = x + ',' + i.infix()
+            return self.root + '(' + x + ')'
+        elif is_equality(self.root):
+            return self.first.infix() + "=" + self.second.infix()
+        elif is_quantifier(self.root):
+            return self.root + self.variable + '[' + self.predicate.infix() + ']'
+        elif is_relation(self.root):
+            x = ''
+            if self.arguments:
+                x = self.arguments[0].infix()
+
+                for i in self.arguments[1:]:
+                    x = x + ',' + i.infix()
+            return self.root + '(' + x + ')'
+        elif is_unary(self.root):
+            return self.root + self.first.infix()
+        elif is_binary(self.root):
+            return "(" + self.first.infix() + self.root + self.second.infix() + ")"
 
     @staticmethod
     def parse_prefix(s):
@@ -149,15 +242,141 @@ class Formula:
             string """
         # Task 7.4.1
 
+        if s[0] == '(':
+            l_counter = 0
+            r_counter = 0
+            i = 0
+            mid = 0
+            first = Formula
+            while not (l_counter == r_counter != 0) and i < len(s):
+                if s[i] == '(':
+                    l_counter += 1
+                elif s[i] == ')':
+                    r_counter += 1
+                elif is_binary(s[i]):
+                    first = Formula.parse_prefix(s[l_counter - r_counter:i])
+                    mid = i
+                i += 1
+            y = Formula.parse_prefix(s[mid + 1:i - 1])
+            return [Formula(s[mid], first[0], y[0]), y[1] + s[i:]]
+        elif is_constant(s[0]) or is_variable(s[0]):
+            i = 1
+            j = 0
+            if len(s) > 1:
+                while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
+                    if is_equality(s[i]):
+                        j = i
+                    i += 1
+                if s[i - 1] == ',':
+                    i -= 1
+                if j > 0:
+                    return [Formula(s[j], Formula.parse_prefix(s[:j])[0],
+                                    Formula.parse_prefix(s[j + 1:i + 1])[0]), s[i + 1:]]
+                else:
+                    return [(Term(s[0:i])), s[i:]]
+            else:
+                return [(Term(s)), '']
+        elif is_function(s[0]) or is_relation(s[0]):
+            i = 1
+            while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
+                i += 1
+            i = i - 1
+            name = s[0:i]
+            opened_par = 0
+            closed_par = 0
+            lst = []
+            last_comma = i
+            while not (opened_par == closed_par != 0):
+                if s[i] == "(":
+                    opened_par += 1
+                elif s[i] == ")":
+                    closed_par += 1
+                elif s[i] == "," and opened_par < closed_par + 2:
+                    lst.append(Formula.parse_prefix(s[last_comma + 1:i])[0])
+                    last_comma = i
+                i += 1
+            if last_comma + 1 != i - 1:
+                lst.append(Formula.parse_prefix(s[last_comma + 1:i - 1])[0])
+
+            if is_relation(s[0]):
+                this_formula = Formula(name, lst)
+                return [this_formula, s[i:]]
+            else:
+                this_term = Term(name, lst)
+                return [this_term, s[i:]]
+
+        elif is_quantifier(s[0]):
+            i = 2
+            while is_variable(s[1:i]):
+                i += 1
+            i = i - 1
+            variable = s[1:i]
+            opened_par, closed_par = 0, 0
+            last_comma = i
+            while not (opened_par == closed_par != 0):
+                if s[i] == "[":
+                    opened_par += 1
+                elif s[i] == "]":
+                    closed_par += 1
+                i += 1
+            predicate, reminder = Formula.parse_prefix(s[last_comma + 1:])
+            if reminder[0] == '=':
+                x = Term.parse_prefix(reminder[1:])
+                predicate = Formula("=", predicate, x[0])
+                reminder = x[1]
+            return Formula(s[0], variable, predicate), reminder[1:]
+
+        elif is_unary(s[0]):
+            if "=" in s:
+                x = Formula.parse_prefix(s[s.index("=") + 1:])
+                y = Formula.parse_prefix(s[1:s.index("=")])
+                return [Formula(s[0], Formula('=', y[0], x[0])),
+                        x[1]]
+            else:
+                x = Formula.parse_prefix(s[1:])
+                return [Formula(s[0], x[0]), x[1]]
+                # elif is_binary(s[0]):
+
     @staticmethod
     def parse(s):
         """ Return a first-order formula parsed from its given string
             representation """
         # Task 7.4.2
+        res, s = Formula.parse_prefix(s)
+        while s != '':
+            res, s = Formula.parse_prefix(s)
+        return res
 
     def free_variables(self):
         """ Return the set of variables that are free in this formula """
         # Task 7.6
+        ret = set()
+        if is_variable(self.root):
+            return {self.root}
+        elif is_term(self.root):
+            return self.root.variables()
+        elif is_relation(self.root):
+            for arg in self.arguments:
+                ret = ret | arg.variables()
+            return ret
+            return self.first.free_variables() | self.second.free_variables()
+        elif is_equality(self.root):
+            return self.first.variables() | self.second.variables()
+
+        elif is_unary(self.root):
+            return self.first.free_variables() | self.second.free_variables()
+
+        elif is_binary(self.root):
+            return self.first.free_variables() | self.second.free_variables()
+
+        elif is_quantifier(self.root):
+
+            x = self.predicate.free_variables()
+            if self.variable in x:
+                x.remove(self.variable)
+
+            return x
+
 
     def functions(self):
         """ Return a set of pairs (function_name, arity) for all function names
@@ -177,7 +396,7 @@ class Formula:
         for variable in substitution_map:
             assert is_variable(variable) and \
                    type(substitution_map[variable]) is Term
-        # Task 9.2
+            # Task 9.2
 
     def substitute_constants(self, substitution_map):
         """ Return a first-order formula obtained from this formula where all
@@ -186,7 +405,7 @@ class Formula:
         for constant in substitution_map:
             assert is_constant(constant) and \
                    type(substitution_map[constant]) is Term
-        # Ex12
+            # Ex12
 
     def propositional_skeleton(self):
         """ Return a PropositionalFormula that is the skeleton of this one.
