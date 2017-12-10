@@ -149,17 +149,23 @@ class Term:
             return ret
         return ret
 
+    def relations(self):
+        """
+        ends the recursion for Formula.relations(
+        :return: an empty set
+        """
+        return set()
+
     def functions(self):
         """ Return a set of pairs (function_name, arity) for all function names
             that appear in this term """
         # Task 8.1.1
         ret = set()
-        if self.arguments:
+        if is_function(self.root[0]):
             arity = len(self.arguments)
             ret.add((self.root, arity))
             for arg in self.arguments:
-                ret.add(arg.functions())
-
+                ret = ret | arg.functions()
         return ret
 
     def substitute_variables(self, substitution_map):
@@ -184,6 +190,7 @@ def unary(s):
     if EQU in s:
         x = Formula.parse_prefix(s[s.index(EQU) + 1:])
         y = Formula.parse_prefix(s[1:s.index(EQU)])
+
         return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
     else:
         x = Formula.parse_prefix(s[1:])
@@ -262,17 +269,17 @@ def constant_or_variable(s):
 
 
 def binary(s):
-    global sign, first
+    sign, first = None, None
     i, mid, r_counter, l_counter = 0, 0, 0, 0
     while not (l_counter == r_counter != 0) and i < len(s):
         if s[i] == '(':
             l_counter += 1
         elif s[i] == ')':
             r_counter += 1
-        elif is_binary(s[i]):
+        elif is_binary(s[i]) and l_counter - r_counter == 1:
             first = Formula.parse_prefix(s[l_counter - r_counter:i])
             mid, sign = i, s[i]
-        elif is_binary(s[i:i + 2]):
+        elif is_binary(s[i:i + 2]) and l_counter - r_counter == 1:
             first = Formula.parse_prefix(s[l_counter - r_counter:i])
             mid, sign = i + 1, s[i:i + 2]
         i += 1
@@ -368,7 +375,9 @@ class Formula:
         # Task 7.4.2
         res, s = Formula.parse_prefix(s)
         while s != '':
-            res, s = Formula.parse_prefix(s)
+            if s[0] == "=":
+                x, s = Formula.parse_prefix(s[1:])
+                res = Formula('=', res, x)
         return res
 
     def free_variables(self):
@@ -399,11 +408,47 @@ class Formula:
         """ Return a set of pairs (function_name, arity) for all function names
             that appear in this formula """
         # Task 8.1.2
+        ret = set()
+        if is_function(self.root[0]):
+            arity = len(self.arguments)
+            ret.add((self.root, arity))
+            for arg in self.arguments:
+                ret = ret | arg.functions()
+        elif is_equality(self.root):
+            ret = self.first.functions() | self.second.functions()
+        elif is_relation(self.root[0]):
+            for arg in self.arguments:
+                ret = ret | arg.functions()
+        elif is_binary(self.root):
+            ret = self.first.functions() | self.second.functions()
+        elif is_unary(self.root):
+            ret = self.first.functions()
+        elif is_quantifier(self.root):
+            ret = self.predicate.functions()
+        return ret
 
     def relations(self):
         """ Return a set of pairs (relation_name, arity) for all relation names
             that appear in this formula """
         # Task 8.1.3
+        ret = set()
+        if is_relation(self.root[0]):
+            arity = len(self.arguments)
+            ret.add((self.root, arity))
+            for arg in self.arguments:
+                ret = ret | arg.relations()
+        elif is_equality(self.root):
+            ret = self.first.relations() | self.second.relations()
+        elif is_function(self.root[0]):
+            for arg in self.arguments:
+                ret = ret | arg.relations()
+        elif is_binary(self.root):
+            ret = self.first.relations() | self.second.relations()
+        elif is_unary(self.root):
+            ret = self.first.relations()
+        elif is_quantifier(self.root):
+            ret = self.predicate.relations()
+        return ret
 
     def substitute_variables(self, substitution_map):
         """ Return a first-order formula obtained from this formula where all
