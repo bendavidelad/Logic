@@ -153,6 +153,14 @@ class Term:
         """ Return a set of pairs (function_name, arity) for all function names
             that appear in this term """
         # Task 8.1.1
+        ret = set()
+        if self.arguments:
+            arity = len(self.arguments)
+            ret.add((self.root, arity))
+            for arg in self.arguments:
+                ret.add(arg.functions())
+
+        return ret
 
     def substitute_variables(self, substitution_map):
         """ Return a term obtained from this term where all the occurrences of
