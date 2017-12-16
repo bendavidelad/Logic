@@ -6,6 +6,8 @@
 from predicates.syntax import *
 from predicates.semantics import *
 from predicates.util import *
+from itertools import permutations
+import itertools
 
 
 def replace_functions_with_relations_in_model(model):
@@ -17,6 +19,22 @@ def replace_functions_with_relations_in_model(model):
         capitalized """
     assert type(model) is Model
     # Task 8.2
+    functions_names = list()
+    model_copy = copy.deepcopy(model)
+    for key in model_copy.meaning:
+        if is_function(key):
+            functions_names.append(key)
+            current_map = model_copy.meaning[key]
+            current_set = set()
+            for kary_tuple in current_map:
+                current_tuple = tuple(current_map[kary_tuple]) + kary_tuple
+                current_set.add(current_tuple)
+            model_copy.meaning[key] = current_set
+    for function_name in functions_names:
+        model_copy.meaning[function_name[0].upper() + function_name[1:]] = model_copy.meaning[function_name]
+        del model_copy.meaning[function_name]
+    return model_copy
+
 
 
 def replace_relations_with_functions_in_model(model, original_functions):
@@ -26,6 +44,25 @@ def replace_relations_with_functions_in_model(model, original_functions):
         or None if no such original_model exists """
     assert type(model) is Model
     # Task 8.3
+    model_copy = copy.deepcopy(model)
+    for original_func in original_functions:
+        func_as_relation_name = original_func[0].upper() + original_func[1:]
+        if func_as_relation_name not in model_copy.meaning:
+            return None
+        current_set = model_copy.meaning[func_as_relation_name]
+        current_map = dict()
+        for item in current_set:
+            if item[1:] in current_map:
+                return None
+            current_map[item[1:]] = item[0]
+        number_of_arguments = len(list(current_set)[0]) - 1
+        for permutation in permutations(model.universe, number_of_arguments):
+            if permutation not in current_map:
+                return None
+        model_copy.meaning[original_func] = current_map
+        del model_copy.meaning[func_as_relation_name]
+    return model_copy
+
 
 
 def compile_term(term):
