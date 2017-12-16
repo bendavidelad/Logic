@@ -7,6 +7,7 @@ from propositions.syntax import Formula as PropositionalFormula
 from predicates.util import *
 
 EQU = "="
+SAME = 'SAME'
 
 
 def is_unary(s):
@@ -188,10 +189,21 @@ class Term:
 
 def unary(s):
     if EQU in s:
-        x = Formula.parse_prefix(s[s.index(EQU) + 1:])
-        y = Formula.parse_prefix(s[1:s.index(EQU)])
-
+        i = s.index(EQU)
+        x = Formula.parse_prefix(s[i + 1:])
+        y = Formula.parse_prefix(s[1:i])
         return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
+    else:
+        x = Formula.parse_prefix(s[1:])
+        return [Formula(s[0], x[0]), x[1]]
+
+
+def unary_SAME(s):
+    if EQU in s:
+        i = s.index(EQU)
+        x = Formula.parse_prefix(s[i + 1:])
+        y = Formula.parse_prefix(s[1:i])
+        return [Formula(s[0], Formula(SAME, [y[0], x[0]])), x[1]]
     else:
         x = Formula.parse_prefix(s[1:])
         return [Formula(s[0], x[0]), x[1]]
@@ -216,6 +228,46 @@ def quantifier(s):
         x = Term.parse_prefix(reminder[1:])
         predicate = Formula(EQU, predicate, x[0])
         reminder = x[1]
+    elif is_binary(reminder[0]):
+        x = Formula.parse_prefix(reminder[1:])
+        predicate = Formula(reminder[0], predicate, x[0])
+        reminder = x[1]
+    elif is_binary(reminder[0:2]):
+        x = Formula.parse_prefix(reminder[2:])
+        predicate = Formula(reminder[0:2], predicate, x[0])
+        reminder = x[1]
+
+    return Formula(s[0], variable, predicate), reminder[1:]
+
+
+def quantifier_SAME(s):
+    i = 2
+    while is_variable(s[1:i]):
+        i += 1
+    i = i - 1
+    variable = s[1:i]
+    opened_par, closed_par = 0, 0
+    last_comma = i
+    while not (opened_par == closed_par != 0):
+        if s[i] == "[":
+            opened_par += 1
+        elif s[i] == "]":
+            closed_par += 1
+        i += 1
+    predicate, reminder = Formula.parse_prefix_SAME(s[last_comma + 1:])
+    if reminder[0] == EQU:
+        x = Term.parse_prefix(reminder[1:])
+        predicate = Formula(SAME, [predicate, x[0]])
+        reminder = x[1]
+    elif is_binary(reminder[0]):
+        x = Formula.parse_prefix(reminder[1:])
+        predicate = Formula(reminder[0], predicate, x[0])
+        reminder = x[1]
+    elif is_binary(reminder[0:2]):
+        x = Formula.parse_prefix(reminder[2:])
+        predicate = Formula(reminder[0:2], predicate, x[0])
+        reminder = x[1]
+
     return Formula(s[0], variable, predicate), reminder[1:]
 
 
@@ -249,6 +301,35 @@ def function_or_reletion(s):
         return [this_term, s[i:]]
 
 
+def function_or_reletion_SAME(s):
+    i = 1
+    while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
+        i += 1
+    i = i - 1
+    name = s[0:i]
+    opened_par = 0
+    closed_par = 0
+    lst = []
+    last_comma = i
+    while not (opened_par == closed_par != 0):
+        if s[i] == "(":
+            opened_par += 1
+        elif s[i] == ")":
+            closed_par += 1
+        elif s[i] == "," and opened_par < closed_par + 2:
+            lst.append(Formula.parse_prefix_SAME(s[last_comma + 1:i])[0])
+            last_comma = i
+        i += 1
+    if last_comma + 1 != i - 1:
+        lst.append(Formula.parse_prefix_SAME(s[last_comma + 1:i - 1])[0])
+    if is_relation(s[0]):
+        this_formula = Formula(name, lst)
+        return [this_formula, s[i:]]
+    else:
+        this_term = Term(name, lst)
+        return [this_term, s[i:]]
+
+
 def constant_or_variable(s):
     i, j = 1, 0
     if len(s) > 1:
@@ -264,6 +345,25 @@ def constant_or_variable(s):
                 return [Formula(s[j], Formula.parse_prefix(s[:j])[0], second[0]), second[1]]
             return [Formula(s[j], Formula.parse_prefix(s[:j])[0], Formula.parse_prefix(s[j + 1:i + 1])[0]),
                     s[i + 1:]]
+        return [(Term(s[0:i])), s[i:]]
+    return [(Term(s)), '']
+
+
+def constant_or_variable_SAME(s):
+    i, j = 1, 0
+    if len(s) > 1:
+        while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
+            if is_equality(s[i]):
+                j = i
+            i += 1
+        if s[i - 1] == ',':
+            i -= 1
+        if j > 0:
+            if is_function((s[i])):
+                second = Formula.parse_prefix_SAME(s[i:])
+                return [Formula(s[j], Formula.parse_prefix_SAME(s[:j])[0], second[0]), second[1]]
+            return [Formula(SAME, [Formula.parse_prefix_SAME(
+                s[:j])[0], Formula.parse_prefix_SAME(s[j + 1:i + 1])[0]]), s[i + 1:]]
         return [(Term(s[0:i])), s[i:]]
     return [(Term(s)), '']
 
@@ -284,8 +384,31 @@ def binary(s):
             mid, sign = i + 1, s[i:i + 2]
         i += 1
     second = Formula.parse_prefix(s[mid + 1:i - 1])
-    if first[1] != '' and first[1][0] == '=':
-        first[0] = Formula('=', first[0], Formula.parse_prefix(first[1][1:])[0])
+    if mid == 0:
+        return second
+    if first[1] != '' and first[1][0] == EQU:
+        first[0] = Formula(EQU, first[0], Formula.parse_prefix(first[1][1:])[0])
+    return [Formula(sign, first[0], second[0]), second[1] + s[i:]]
+
+
+def binary_SAME(s):
+    sign, first = None, None
+    i, mid, r_counter, l_counter = 0, 0, 0, 0
+    while not (l_counter == r_counter != 0) and i < len(s):
+        if s[i] == '(':
+            l_counter += 1
+        elif s[i] == ')':
+            r_counter += 1
+        elif is_binary(s[i]) and l_counter - r_counter == 1:
+            first = Formula.parse_prefix(s[l_counter - r_counter:i])
+            mid, sign = i, s[i]
+        elif is_binary(s[i:i + 2]) and l_counter - r_counter == 1:
+            first = Formula.parse_prefix(s[l_counter - r_counter:i])
+            mid, sign = i + 1, s[i:i + 2]
+        i += 1
+    second = Formula.parse_prefix_SAME(s[mid + 1:i - 1])
+    if first[1] != '' and first[1][0] == EQU:
+        first[0] = Formula(SAME, [first[0], Formula.parse_prefix(first[1][1:])[0]])
     return [Formula(sign, first[0], second[0]), second[1] + s[i:]]
 
 
@@ -369,6 +492,23 @@ class Formula:
             return unary(s)
 
     @staticmethod
+    def parse_prefix_SAME(s):
+        """ Parse a first-order formula from the prefix of a given string.
+            Return a pair: the parsed formula, and unparsed remainder of the
+            string """
+        # Task 7.4.1
+        if s[0] == '(':
+            return binary_SAME(s)
+        elif is_constant(s[0]) or is_variable(s[0]):
+            return constant_or_variable_SAME(s)
+        elif is_function(s[0]) or is_relation(s[0]):
+            return function_or_reletion_SAME(s)
+        elif is_quantifier(s[0]):
+            return quantifier_SAME(s)
+        elif is_unary(s[0]):
+            return unary_SAME(s)
+
+    @staticmethod
     def parse(s):
         """ Return a first-order formula parsed from its given string
             representation """
@@ -378,6 +518,18 @@ class Formula:
             if s[0] == "=":
                 x, s = Formula.parse_prefix(s[1:])
                 res = Formula('=', res, x)
+        return res
+
+    @staticmethod
+    def parse_with_SAME(s):
+        """ Return a first-order formula parsed from its given string
+            representation """
+        # Task 7.4.2
+        res, s = Formula.parse_prefix_SAME(s)
+        while s != '':
+            if s[0] == "=":
+                x, s = Formula.parse_prefix_SAME(s[1:])
+                res = Formula('SAME', [res, x])
         return res
 
     def free_variables(self):

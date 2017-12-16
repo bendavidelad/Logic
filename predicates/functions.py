@@ -7,6 +7,7 @@ from predicates.syntax import *
 from predicates.semantics import *
 from predicates.util import *
 
+
 def replace_functions_with_relations_in_model(model):
     """ Return a new model obtained from the given model by replacing every
         function meaning with the corresponding relation meaning (i.e.,
@@ -17,6 +18,7 @@ def replace_functions_with_relations_in_model(model):
     assert type(model) is Model
     # Task 8.2
 
+
 def replace_relations_with_functions_in_model(model, original_functions):
     """ Return a new model original_model with function names
         original_functions such that:
@@ -24,6 +26,7 @@ def replace_relations_with_functions_in_model(model, original_functions):
         or None if no such original_model exists """
     assert type(model) is Model
     # Task 8.3
+
 
 def compile_term(term):
     """ Return a list of steps that result from compiling the given term,
@@ -40,6 +43,7 @@ def compile_term(term):
     assert type(term) is Term and is_function(term.root)
     # Task 8.4
 
+
 def replace_functions_with_relations_in_formula(formula):
     """ Return a function-free analog of the given formula. Every k-ary
         function that is used in the given formula should be replaced with a
@@ -54,6 +58,7 @@ def replace_functions_with_relations_in_formula(formula):
         k-tuple of the other arguments """
     assert type(formula) is Formula
     # Task 8.5
+
 
 def replace_functions_with_relations_in_formulae(formulae):
     """ Return a list of function-free formulae (as strings) that is equivalent
@@ -75,7 +80,8 @@ def replace_functions_with_relations_in_formulae(formulae):
     for formula in formulae:
         assert type(formula) is str
     # task 8.6
-        
+
+
 def replace_equality_with_SAME(formulae):
     """ Return a list of equality-free formulae (as strings) that is equivalent
         to the given formulae list (also of strings) that may contain the
@@ -86,16 +92,61 @@ def replace_equality_with_SAME(formulae):
         should have one formula for each formula in the given list, as well as
         additional formulae that ensure that SAME is reflexive, symmetric,
         transitive, and respected by all relations in the given formulae """
-    for formula in formulae:
-        assert type(formula) is str
     # Task 8.7
-        
+    lst = []
+    for i, formula in enumerate(formulae):
+        assert type(formula) is str
+        if "=" in formula:
+            lst.append(i)
+    new_formulae = []
+    names = set()
+    for i in lst:
+        current_formula = Formula.parse_with_SAME(formulae[i])
+        new_formulae.append(current_formula.infix())
+        names = names | current_formula.relations()
+    new_formulae = new_formulae + replace_equality_with_SAME_extra_lines(names)
+    return new_formulae
+
+
+def replace_equality_with_SAME_extra_lines(names):
+    """
+
+    :param vars:
+    :return: the
+    """
+    j, count = 0, 1
+    names_lst = [x[0] for x in list(names)]
+    if names_lst[0] == SAME:
+        j = 1
+    for_all = 'Ax0[Ay0['
+    implies_list_1 = names_lst[j] + '(x0'
+    implies_list_2 = names_lst[j] + '(y0'
+    same = 'SAME(x0,y0)'
+    for i in range(len(names_lst)):
+        if names_lst[i] != SAME:
+            for_all = for_all + 'Ax' + str(i + 1) + '[Ay' + str(i + 1) + '['
+            implies_list_1 = implies_list_1 + ',x' + str(i + 1)
+            implies_list_2 = implies_list_2 + ',y' + str(i + 1)
+            same = same + '&(SAME(x' + str(i + 1) + ',y' + str(i + 1) + ')'
+            count += 1
+    line = [for_all + '(' + same + ')' * count + '->(' + implies_list_1 + ')->' + implies_list_2 + '))' + (
+            ']' * 2 * count)]
+    return line + ['SAME(x,x)', '(SAME(x,y)->SAME(y,x))', '((SAME(x,y)&SAME(y,z))->SAME(x,z))']
+
+
 def add_SAME_as_equality(model):
     """ Return a new model obtained from the given model by adding the relation
         SAME that behaves like equality """
     assert type(model) is Model
     # Task 8.8
-    
+    new_model = copy.deepcopy(model)
+    same_set = set()
+    for i in model.universe:
+        same_set.add((i, i))
+    new_model.meaning[SAME] = same_set
+    return new_model
+
+
 def make_equality_as_SAME(model):
     """ Return a new model where equality is made to coincide with the
         reflexive, symmetric, transitive, and respected by all relations,
@@ -109,3 +160,25 @@ def make_equality_as_SAME(model):
         there are no function meanings in the given model """
     assert type(model) is Model
     # Task 8.9
+    new_model = copy.deepcopy(model)
+    remove_set1, remove_set2 = set(), set()
+    for mean1 in new_model.meaning:
+        if mean1 == SAME:
+            for same in new_model.meaning[mean1]:
+                if same[0] != same[1] and ((same[1], same[0]) not in remove_set1):
+                    remove_set1.add(same)
+    del new_model.meaning[SAME]
+    for remove_tuple in remove_set1:
+        if remove_tuple[0] in new_model.universe and remove_tuple[1] in new_model.universe:
+            new_model.universe.remove(remove_tuple[0])
+            for mean2 in new_model.meaning:
+                if is_variable(mean2) or is_constant(mean2):
+                    if new_model.meaning[mean2] == remove_tuple[0]:
+                        new_model.meaning[mean2] = remove_tuple[1]
+                else:
+                    for relation_del in new_model.meaning[mean2]:
+                        if relation_del[0] == remove_tuple[0]:
+                            remove_set2.add((mean2, relation_del))
+    for to_del in remove_set2:
+        new_model.meaning[to_del[0]].remove(to_del[1])
+    return new_model

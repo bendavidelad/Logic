@@ -73,7 +73,8 @@ class Model:
             elif formula.root == "&":
                 return self.evaluate_formula(formula.first, assignment) & self.evaluate_formula(formula.second, assignment)
             elif formula.root == "->":
-                return (not self.evaluate_formula(formula.first, assignment)) & self.evaluate_formula(formula.second, assignment)
+                return (not self.evaluate_formula(formula.first, assignment)) | self.evaluate_formula(
+                    formula.second, assignment)
 
     def is_model_of(self, formulae_repr):
         """ Return whether self a model of the formulae represented by the
