@@ -236,7 +236,6 @@ def quantifier(s):
         x = Formula.parse_prefix(reminder[2:])
         predicate = Formula(reminder[0:2], predicate, x[0])
         reminder = x[1]
-
     return Formula(s[0], variable, predicate), reminder[1:]
 
 
@@ -267,11 +266,10 @@ def quantifier_SAME(s):
         x = Formula.parse_prefix(reminder[2:])
         predicate = Formula(reminder[0:2], predicate, x[0])
         reminder = x[1]
-
     return Formula(s[0], variable, predicate), reminder[1:]
 
 
-def function_or_reletion(s):
+def function_or_relation(s):
     i = 1
     while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
         i += 1
@@ -301,7 +299,7 @@ def function_or_reletion(s):
         return [this_term, s[i:]]
 
 
-def function_or_reletion_SAME(s):
+def function_or_relation_SAME(s):
     i = 1
     while (is_function(s[0:i]) or is_relation(s[0:i])) and i < len(s):
         i += 1
@@ -485,7 +483,7 @@ class Formula:
         elif is_constant(s[0]) or is_variable(s[0]):
             return constant_or_variable(s)
         elif is_function(s[0]) or is_relation(s[0]):
-            return function_or_reletion(s)
+            return function_or_relation(s)
         elif is_quantifier(s[0]):
             return quantifier(s)
         elif is_unary(s[0]):
@@ -502,7 +500,7 @@ class Formula:
         elif is_constant(s[0]) or is_variable(s[0]):
             return constant_or_variable_SAME(s)
         elif is_function(s[0]) or is_relation(s[0]):
-            return function_or_reletion_SAME(s)
+            return function_or_relation_SAME(s)
         elif is_quantifier(s[0]):
             return quantifier_SAME(s)
         elif is_unary(s[0]):

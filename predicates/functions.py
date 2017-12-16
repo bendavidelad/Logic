@@ -181,4 +181,5 @@ def make_equality_as_SAME(model):
                             remove_set2.add((mean2, relation_del))
     for to_del in remove_set2:
         new_model.meaning[to_del[0]].remove(to_del[1])
+
     return new_model
