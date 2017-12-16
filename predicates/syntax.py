@@ -290,7 +290,6 @@ def function_or_relation(s):
         i += 1
     if last_comma + 1 != i - 1:
         lst.append(Formula.parse_prefix(s[last_comma + 1:i - 1])[0])
-
     if is_relation(s[0]):
         this_formula = Formula(name, lst)
         return [this_formula, s[i:]]

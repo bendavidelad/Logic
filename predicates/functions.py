@@ -205,6 +205,7 @@ def make_equality_as_SAME(model):
                 if same[0] != same[1] and ((same[1], same[0]) not in remove_set1):
                     remove_set1.add(same)
     del new_model.meaning[SAME]
+
     for remove_tuple in remove_set1:
         if remove_tuple[0] in new_model.universe and remove_tuple[1] in new_model.universe:
             new_model.universe.remove(remove_tuple[0])
