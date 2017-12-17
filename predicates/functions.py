@@ -179,6 +179,35 @@ def replace_functions_with_relations_in_formula(formula):
         return Formula(formula.root, formula.variable, replace_functions_with_relations_in_formula(formula.predicate))
 
 
+def first_proof(function_name, args_num):
+        list_of_fresh_variables = list()
+        for i in range(args_num + 1):
+            list_of_fresh_variables.append(Term(next(fresh_variable_name_generator)))
+        formula = Formula(function_name, list_of_fresh_variables)
+        total_formula = Formula("E", list_of_fresh_variables[0].root, formula)
+        iter_variables = iter(reversed(list_of_fresh_variables[1:]))
+        for variable in iter_variables:
+            total_formula = Formula("A", variable.root, total_formula)
+        return total_formula
+
+
+def second_proof(function_name, args_num):
+    list_of_fresh_variables = list()
+    for i in range(args_num):
+        list_of_fresh_variables.append(Term(next(fresh_variable_name_generator)))
+    y1 = Term(next(fresh_variable_name_generator))
+    y2 = Term(next(fresh_variable_name_generator))
+    first_relation = Formula(function_name, [y1] + list_of_fresh_variables)
+    second_relation = Formula(function_name, [y2] + list_of_fresh_variables)
+    equals_formula = Formula("=", y1, y2)
+    relations_formula = Formula("&", first_relation, second_relation)
+    total_formula = Formula("->", relations_formula, equals_formula)
+    total_formula = Formula("A", y2.root, total_formula)
+    total_formula = Formula("A", y1.root, total_formula)
+    for arg in list_of_fresh_variables:
+        total_formula = Formula("A", arg.root, total_formula)
+    return total_formula
+
 
 
 def replace_functions_with_relations_in_formulae(formulae):
@@ -202,10 +231,19 @@ def replace_functions_with_relations_in_formulae(formulae):
         assert type(formula) is str
     # task 8.6
     list_of_formulae = list()
-    total_list = list()
+    list_of_formulae_without_functions = list()
     for formula in formulae:
-        list_of_formulae.append(replace_functions_with_relations_in_formula(Formula.parse(formula)))
-    print()
+        current_formula = Formula.parse(formula)
+        list_of_formulae.append(current_formula)
+        list_of_formulae_without_functions.append(str(replace_functions_with_relations_in_formula(current_formula)))
+    for formula in list_of_formulae:
+        for function_name, args in formula.functions():
+            name_of_relation = function_name[0].upper() + function_name[1:]
+            list_of_formulae_without_functions.append(str(Formula("&", first_proof(name_of_relation, args), second_proof(name_of_relation, args))))
+    return list_of_formulae_without_functions
+
+
+
 
 
 
