@@ -330,39 +330,12 @@ def function_or_relation_SAME(s):
 def constant_or_variable(s):
     i, j = 1, 0
     if len(s) > 1:
-        while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
+        while (is_constant(s[j:i]) or is_variable((s[j:i]))) and i < len(s):
             if is_equality(s[i]):
-                j = i
+                j = 1
             i += 1
-        if s[i - 1] == ',':
-            i -= 1
-        if j > 0:
-            if is_function((s[i])):
-                second = Formula.parse_prefix(s[i:])
-                return [Formula(s[j], Formula.parse_prefix(s[:j])[0], second[0]), second[1]]
-            return [Formula(s[j], Formula.parse_prefix(s[:j])[0], Formula.parse_prefix(s[j + 1:i + 1])[0]),
-                    s[i + 1:]]
-        return [(Term(s[0:i])), s[i:]]
-    return [(Term(s)), '']
-
-
-def constant_or_variable_SAME(s):
-    i, j = 1, 0
-    if len(s) > 1:
-        while (is_constant(s[j:i]) or is_variable((s[j:i])) or is_equality(s[i])) and i < len(s):
-            if is_equality(s[i]):
-                j = i
-            i += 1
-        if s[i - 1] == ',':
-            i -= 1
-        if j > 0:
-            if is_function((s[i])):
-                second = Formula.parse_prefix_SAME(s[i:])
-                return [Formula(s[j], Formula.parse_prefix_SAME(s[:j])[0], second[0]), second[1]]
-            return [Formula(SAME, [Formula.parse_prefix_SAME(
-                s[:j])[0], Formula.parse_prefix_SAME(s[j + 1:i + 1])[0]]), s[i + 1:]]
-        return [(Term(s[0:i])), s[i:]]
-    return [(Term(s)), '']
+        return [(Term(s[0:i - j])), s[i - 1:]]
+    return [(Term(s)), ""]
 
 
 def binary(s):
@@ -385,6 +358,8 @@ def binary(s):
         return second
     if first[1] != '' and first[1][0] == EQU:
         first[0] = Formula(EQU, first[0], Formula.parse_prefix(first[1][1:])[0])
+    if second[1] != '' and second[1][0] == EQU:
+        second = [Formula(EQU, second[0], Formula.parse_prefix(second[1][1:])[0]), '']
     return [Formula(sign, first[0], second[0]), second[1] + s[i:]]
 
 
@@ -405,7 +380,9 @@ def binary_SAME(s):
         i += 1
     second = Formula.parse_prefix_SAME(s[mid + 1:i - 1])
     if first[1] != '' and first[1][0] == EQU:
-        first[0] = Formula(SAME, [first[0], Formula.parse_prefix(first[1][1:])[0]])
+        first[0] = Formula(SAME, [first[0], Formula.parse_prefix_SAME(first[1][1:])[0]])
+    if second[1] != '' and second[1][0] == EQU:
+        second = [Formula(SAME, [second[0], Formula.parse_prefix_SAME(second[1][1:])[0]]), '']
     return [Formula(sign, first[0], second[0]), second[1] + s[i:]]
 
 
@@ -497,7 +474,7 @@ class Formula:
         if s[0] == '(':
             return binary_SAME(s)
         elif is_constant(s[0]) or is_variable(s[0]):
-            return constant_or_variable_SAME(s)
+            return constant_or_variable(s)
         elif is_function(s[0]) or is_relation(s[0]):
             return function_or_relation_SAME(s)
         elif is_quantifier(s[0]):

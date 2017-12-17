@@ -239,11 +239,7 @@ def replace_equality_with_SAME(formulae):
 
 
 def replace_equality_with_SAME_extra_lines(names):
-    """
 
-    :param vars:
-    :return: the
-    """
     j, count = 0, 1
     names_lst = [x[0] for x in list(names)]
     if names_lst[0] == SAME:
