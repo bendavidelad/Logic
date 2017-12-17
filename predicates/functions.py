@@ -7,7 +7,6 @@ from predicates.syntax import *
 from predicates.semantics import *
 from predicates.util import *
 from itertools import permutations
-import itertools
 
 
 def replace_functions_with_relations_in_model(model):
@@ -65,6 +64,15 @@ def replace_relations_with_functions_in_model(model, original_functions):
 
 
 
+def compile_term_helper(term, list_of_steps):
+    for argument in range(len(term.arguments)):
+        if is_function(term.arguments[argument].root):
+            term.arguments[argument] = compile_term_helper(term.arguments[argument], list_of_steps).first
+    formula_to_return = Formula("=", Term(next(fresh_variable_name_generator)), term)
+    list_of_steps.append(formula_to_return)
+    return formula_to_return
+
+
 def compile_term(term):
     """ Return a list of steps that result from compiling the given term,
         whose root is a function invocation (possibly with nested function
@@ -79,6 +87,18 @@ def compile_term(term):
         step should evaluate to the value of the given term """
     assert type(term) is Term and is_function(term.root)
     # Task 8.4
+    term_copy = copy.deepcopy(term)
+    list_of_steps = list()
+    compile_term_helper(term_copy, list_of_steps)
+    return list_of_steps
+
+def replace_function_with_corresponding_variable(term, fresh_variable, function_to_change):
+    for argument in range(len(term.arguments)):
+        if term.arguments[argument] == function_to_change:
+            term.arguments[argument] = fresh_variable
+        else:
+            if is_function(term.arguments[argument].root):
+                replace_function_with_corresponding_variable(term.arguments[argument], fresh_variable, function_to_change)
 
 
 def replace_functions_with_relations_in_formula(formula):
@@ -95,6 +115,70 @@ def replace_functions_with_relations_in_formula(formula):
         k-tuple of the other arguments """
     assert type(formula) is Formula
     # Task 8.5
+    formula_copy = copy.deepcopy(formula)
+    total_formula = formula_copy
+    if is_constant(formula.root) or is_variable(formula.root):
+        return formula
+    elif is_equality(formula.root):
+        first_steps = list()
+        second_steps = list()
+        if is_function(formula.first.root):
+            first_steps = compile_term(formula.first)
+        if is_function(formula.second.root):
+            second_steps = compile_term(formula.second)
+        for step in first_steps:
+            new_relation = Formula(step.second.root[0].upper() + step.second.root[1:], [step.first] + step.second.arguments)
+            if formula_copy.first == step.second:
+                formula_copy.first = step.first
+            else:
+                replace_function_with_corresponding_variable(formula_copy.first, step.first, step.second)
+            if is_equality(total_formula.root):
+                total_formula = Formula("A", step.first.root, Formula("->", new_relation, total_formula))
+            else:
+                temp = total_formula
+                while temp.predicate.second != formula_copy:
+                    temp = temp.predicate.second
+                temp.predicate.second = Formula("A", step.first.root, Formula("->", new_relation, formula_copy))
+        for step in second_steps:
+            new_relation = Formula(step.second.root[0].upper() + step.second.root[1:], [step.first] + step.second.arguments)
+            if formula_copy.second == step.second:
+                formula_copy.second = step.first
+            else:
+                replace_function_with_corresponding_variable(formula_copy.second, step.first, step.second)
+            if is_equality(total_formula.root):
+                total_formula = Formula("A", step.first.root, Formula("->", new_relation, total_formula))
+            else:
+                temp = total_formula
+                while temp.predicate.second != formula_copy:
+                    temp = temp.predicate.second
+                temp.predicate.second = Formula("A", step.first.root, Formula("->", new_relation, formula_copy))
+        return total_formula
+    elif is_relation(formula.root):
+        list_of_lists = list()
+        for argument in formula_copy.arguments:
+            if is_function(argument.root):
+                current_list = compile_term(argument)
+                list_of_lists.append(current_list)
+        for list_of_steps in list_of_lists:
+            for step in list_of_steps:
+                new_relation = Formula(step.second.root[0].upper() + step.second.root[1:], [step.first] + step.second.arguments)
+                replace_function_with_corresponding_variable(formula_copy, step.first, step.second)
+                if is_relation(total_formula.root):
+                    total_formula = Formula("A", step.first.root, Formula("->", new_relation, total_formula))
+                else:
+                    temp = total_formula
+                    while temp.predicate.second != formula_copy:
+                        temp = temp.predicate.second
+                    temp.predicate.second = Formula("A", step.first.root, Formula("->", new_relation, formula_copy))
+        return total_formula
+    elif is_binary(formula.root):
+        return Formula(formula.root, replace_functions_with_relations_in_formula(formula.first), replace_functions_with_relations_in_formula(formula.second))
+    elif is_unary(formula.root):
+        return Formula("~", replace_functions_with_relations_in_formula(formula.first))
+    elif is_quantifier(formula.root):
+        return Formula(formula.root, formula.variable, replace_functions_with_relations_in_formula(formula.predicate))
+
+
 
 
 def replace_functions_with_relations_in_formulae(formulae):
@@ -117,6 +201,15 @@ def replace_functions_with_relations_in_formulae(formulae):
     for formula in formulae:
         assert type(formula) is str
     # task 8.6
+    list_of_formulae = list()
+    total_list = list()
+    for formula in formulae:
+        list_of_formulae.append(replace_functions_with_relations_in_formula(Formula.parse(formula)))
+    print()
+
+
+
+
 
 
 def replace_equality_with_SAME(formulae):
