@@ -2,6 +2,7 @@
     Mathematical Logic through Programming
     by Gonczarowski and Nisan.
     File name: code/predicates/syntax.py """
+import copy
 
 from propositions.syntax import Formula as PropositionalFormula
 from predicates.util import *
@@ -41,6 +42,7 @@ def is_relation(s):
 
 def is_constant(s):
     """ Is s a constant name? """
+
     return ((s[0] >= '0' and s[0] <= '9') or (s[0] >= 'a' and s[0] <= 'd')) and s.isalnum()
 
 
@@ -169,22 +171,25 @@ class Term:
                 ret = ret | arg.functions()
         return ret
 
-    def substitute_variables(self, substitution_map):
+    def substitute(self, substitution_map):
         """ Return a term obtained from this term where all the occurrences of
-            each variable v that appears in the dictionary substitution_map are
-            replaced with the term substitution_map[v] """
-        for variable in substitution_map:
-            assert is_variable(variable) and type(substitution_map[variable]) is Term
-            # Task 9.1
+            each constant name or variable name element_name that appears as a
+            key in the dictionary substitution_map are replaced with the term
+            substitution_map[element_name] """
+        # Task 9.1
 
-    def substitute_constants(self, substitution_map):
-        """ Return a term obtained from this formula where all the occurrences
-            of each constant c that appears in the dictionary substitution_map
-            are replaced with the term substitution_map[v] """
-        for constant in substitution_map:
-            assert is_constant(constant) and \
-                   type(substitution_map[constant]) is Term
-            # Ex12
+        for element_name in substitution_map:
+            assert (is_constant(element_name) or is_variable(element_name)) and \
+                   type(substitution_map[element_name]) is Term
+        if is_constant(self.root) or is_variable(self.root):
+            if self.root in substitution_map:
+                return substitution_map[self.root]
+            return self
+        else:
+            new_term = self
+            for i, term in enumerate(new_term.arguments):
+                new_term.arguments[i] = term.substitute(substitution_map)
+            return new_term
 
 
 def unary(s):
@@ -576,23 +581,34 @@ class Formula:
             ret = self.predicate.relations()
         return ret
 
-    def substitute_variables(self, substitution_map):
+    def substitute(self, substitution_map):
         """ Return a first-order formula obtained from this formula where all
-            the free occurrences of each variable v that appears in the
-            dictionary substitution_map are replaced with the term
-            substitution_map[v] """
-        for variable in substitution_map:
-            assert is_variable(variable) and type(substitution_map[variable]) is Term
-            # Task 9.2
-
-    def substitute_constants(self, substitution_map):
-        """ Return a first-order formula obtained from this formula where all
-            the occurrences of each constant c that appears in the dictionary
-            substitution_map are replaced with the term substitution_map[v] """
-        for constant in substitution_map:
-            assert is_constant(constant) and \
-                   type(substitution_map[constant]) is Term
-            # Ex12
+            occurrences of each constant name element_name and all *free*
+            occurrences of each variable name element_name for element_name
+            that appears as a key in the dictionary substitution_map are
+            replaced with substitution_map[element_name] """
+        for element_name in substitution_map:
+            assert (is_constant(element_name) or is_variable(element_name)) and \
+                   type(substitution_map[element_name]) is Term
+        # Task 9.2
+        new_func = self
+        if is_term(new_func.root):
+            return new_func.substitute(substitution_map)
+        elif is_quantifier(new_func.root):
+            new_map = substitution_map
+            if new_func.variable in substitution_map:
+                del new_map[new_func.variable]
+            new_func.predicate = new_func.predicate.substitute(new_map)
+            return new_func
+        elif is_unary(new_func.root):
+            new_func.first = new_func.second.substitute(substitution_map)
+        elif is_relation(new_func.root):
+            for i, term in enumerate(new_func.arguments):
+                new_func.arguments[i] = term.substitute(substitution_map)
+        elif is_equality(new_func.root) or is_binary(new_func.root):
+            new_func.first = new_func.first.substitute(substitution_map)
+            new_func.second = new_func.second.substitute(substitution_map)
+        return new_func
 
     def propositional_skeleton(self):
         """ Return a PropositionalFormula that is the skeleton of this one.

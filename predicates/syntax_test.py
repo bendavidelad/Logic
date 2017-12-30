@@ -91,27 +91,35 @@ def test_relations(debug=False):
             print('The relations in', s, 'are', relations)
         assert relations == expected
 
-def test_term_substitute_variables(debug=False):
+def test_term_substitute(debug=False):
+    # Test substitution of a single variable
     substitution_map = {'x': Term.parse('g(1)')}
     for s,expected in [['0', '0'], ['x', 'g(1)'], ['f(x)', 'f(g(1))'],
                        ['s(s(x))', 's(s(g(1)))'],
                        ['f(x,g(y,x,0),1)', 'f(g(1),g(y,g(1),0),1)'],
                        ['f(x,0,g(x))', 'f(g(1),0,g(g(1)))']]:
-        result = Term.parse(s).substitute_variables(substitution_map)
+        result = Term.parse(s).substitute(substitution_map)
         if debug:
             print("Substituting 'g(1)' for 'x' in", s, 'gives', result)
         assert str(result) == expected
 
-def test_term_substitute_constants(debug=False):
+    # Test substitution of a single constant
     substitution_map = {'c': Term.parse('g(1)')}
     for s,expected in [['0', '0'], ['c', 'g(1)'], ['f(c)', 'f(g(1))'],
                        ['s(s(c))', 's(s(g(1)))'],
                        ['f(c,g(y,c,0),1)', 'f(g(1),g(y,g(1),0),1)'],
                        ['f(c,0,g(c))', 'f(g(1),0,g(g(1)))']]:
-        result = Term.parse(s).substitute_constants(substitution_map)
+        result = Term.parse(s).substitute(substitution_map)
         if debug:
             print("Substituting 'g(1)' for 'c' in", s, 'gives', result)
         assert str(result) == expected
+
+    # Test a more complex substitution
+    substitution_map = {'c':Term.parse('g(f(x))'), 'x':Term.parse('f(c,x)')}
+    result = Term.parse('h(c,f(x))').substitute(substitution_map)
+    if debug:
+        print('Substituting', substitution_map, " in 'h(c,f(x))' gives", result)
+    assert str(result) == 'h(g(f(x)),f(f(c,x)))'
 
 def test_formula_repr(debug=False):
     if debug:
@@ -165,32 +173,25 @@ def test_free_variables(debug=False):
             print('The free variables in', s, 'are', variables)
         assert variables == expected_variables
 
-def test_formula_substitute_variables(debug=False):
-    for s,variable,term,expected in [
-            ('R(x,y)', 'x', 'f(0)', 'R(f(0),y)'),
-            ('(x=x|y=y)', 'y', '0', '(x=x|0=0)'),
-            ('Ax[R(x,y)]', 'y', 'z', 'Ax[R(x,z)]'),
-            ('(x=x|Ex[R(x,y)])', 'x', 'z', '(z=z|Ex[R(x,y)])')]:
+def test_formula_substitute(debug=False):
+    for s,substitution,expected in [
+            ('R(x,y)', {'x':'f(0)'}, 'R(f(0),y)'),
+            ('(x=x|y=y)', {'y':'0'}, '(x=x|0=0)'),
+            ('Ax[R(x,y)]', {'y':'z'}, 'Ax[R(x,z)]'),
+            ('(x=x|Ex[R(x,y)])', {'x':'z'}, '(z=z|Ex[R(x,y)])'),
+            ('R(c,y)', {'c':'f(0)'}, 'R(f(0),y)'),
+            ('(x=x|c=c)', {'c':'0'}, '(x=x|0=0)'),
+            ('Ax[R(x,c)]', {'c':'z'}, 'Ax[R(x,z)]'),
+            ('(c=c|Ex[R(c,y)])', {'c':'z'}, '(z=z|Ex[R(z,y)])'),
+            ('R(c,d)', {'c':'d','d':'c'}, 'R(d,c)'),
+            ('Q(x,c)', {'x':'f(c,d)','c':'f(1,x)'}, 'Q(f(c,d),f(1,x))')]:
         formula = Formula.parse(s)
-        substitution_map = {variable: Term.parse(term)}
-        result = str(formula.substitute_variables(substitution_map))
+        substitution_map = {v: Term.parse(substitution[v])
+                            for v in substitution.keys()}
+        result = str(formula.substitute(substitution_map))
         if debug:
-            print('Substituting', substitution_map[variable], 'for', variable,
-                  'in', formula, 'yields', result)
-        assert result == expected
-
-def test_formula_substitute_constants(debug=False):
-    for s,constant,term,expected in [
-            ('R(c,y)', 'c', 'f(0)', 'R(f(0),y)'),
-            ('(x=x|c=c)', 'c', '0', '(x=x|0=0)'),
-            ('Ax[R(x,c)]', 'c', 'z', 'Ax[R(x,z)]'),
-            ('(c=c|Ex[R(c,y)])', 'c', 'z', '(z=z|Ex[R(z,y)])')]:
-        formula = Formula.parse(s)
-        substitution_map = {constant: Term.parse(term)}
-        result = str(formula.substitute_constants(substitution_map))
-        if debug:
-            print('Substituting', substitution_map[constant], 'for', constant,
-                  'in', formula, 'yields', result)
+            print('Substituting', substitution_map, 'in', formula, 'yields',
+                  result)
         assert result == expected
 
 def test_skeleton(debug=False):
