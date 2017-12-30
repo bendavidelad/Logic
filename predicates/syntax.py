@@ -339,6 +339,8 @@ def constant_or_variable(s):
             if is_equality(s[i]):
                 j = 1
             i += 1
+        if i == len(s):
+            return [(Term(s[0:i - j])), s[i:]]
         return [(Term(s[0:i - j])), s[i - 1:]]
     return [(Term(s)), ""]
 
