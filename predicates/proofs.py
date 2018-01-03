@@ -275,6 +275,12 @@ class Proof:
             assert type(variable) is str and \
                    type(justification[2][variable]) is str
         # Task 9.5
+        schemata = self.assumptions[justification[1]]
+        schemata_instance = schemata.instantiate(justification[2])
+        if schemata_instance == self.lines[line].formula:
+            return True
+        else:
+            return False
 
     def verify_t_justification(self, line):
         """ Returns whether the line with the given number is a tautology """
