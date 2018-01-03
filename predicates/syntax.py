@@ -6,6 +6,7 @@ import copy
 
 from propositions.syntax import Formula as PropositionalFormula
 from predicates.util import *
+import copy
 
 EQU = "="
 SAME = 'SAME'
@@ -618,3 +619,34 @@ class Formula:
             z1,z2,... (obtained by calling next(fresh_variable_name_generator)),
             starting from left to right """
         # Task 9.5
+        switches_dict = {}
+        return self.propositional_skeleton_helper(switches_dict)
+
+    def propositional_skeleton_helper(self, switches_dict):
+        root = self.root
+        if is_variable(root):
+            return self
+        elif is_relation(root):
+            if self not in switches_dict:
+                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
+            self.root = switches_dict[self]
+            self.arguments = None
+        elif is_equality(root):
+            if self not in switches_dict:
+                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
+            self.root = switches_dict[self]
+            self.first = None
+            self.second = None
+        elif is_quantifier(root):
+            if self not in switches_dict:
+                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
+            self.root = switches_dict[self]
+            self.variable = None
+            self.predicate = None
+        elif is_unary(root):
+            self.first = self.first.propositional_skeleton_helper(switches_dict)
+        else:
+            self.first = self.first.propositional_skeleton_helper(switches_dict)
+            self.second = self.second.propositional_skeleton_helper(switches_dict)
+        return self
+

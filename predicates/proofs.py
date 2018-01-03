@@ -4,6 +4,7 @@
     File name: code/predicates/proofs.py """
 
 from predicates.syntax import *
+from propositions.semantics import is_tautology
 
 
 class Schema:
@@ -289,6 +290,10 @@ class Proof:
         assert justification[0] == 'T'
         assert len(justification) == 1
         # Task 9.7
+        formula = self.lines[line].formula
+        prop_formula = PropositionalFormula.from_infix(formula.propositional_skeleton().infix())
+        return is_tautology(prop_formula)
+
 
     def verify_mp_justification(self, line):
         """ Returns whether the line with the given number is validly obtained
@@ -301,6 +306,17 @@ class Proof:
         assert type(justification[1]) == int
         assert type(justification[2]) == int
         # Task 9.8
+        if justification[1] >= line or justification[2] >= line:
+            return False
+        conclusion = self.lines[line].formula
+        first = self.lines[justification[1]].formula
+        first_implies_second = self.lines[justification[2]].formula
+        if not first_implies_second.first == first:
+            return False
+        if not first_implies_second.second == conclusion:
+            return False
+        return True
+
 
     def verify_ug_justification(self, line):
         """ Returns whether the line with the given number a valid universal
@@ -311,6 +327,15 @@ class Proof:
         assert len(justification) == 2
         assert type(justification[1]) == int
         # Task 9.9
+        if justification[1] >= line:
+            return False
+        conclusion = self.lines[line].formula
+        if conclusion.root != "A":
+            return False
+        assumption = self.lines[justification[1]].formula
+        if conclusion.predicate != assumption:
+            return False
+        return True
 
     def verify_justification(self, line):
         """ Returns whether the line with the given number is validly justified
