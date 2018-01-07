@@ -99,7 +99,7 @@ class Schema:
         for variable in bound_variables:
             assert is_variable(variable)
         # Task 9.3
-        new_formula = formula
+        new_formula = copy.deepcopy(formula)
         if is_relation(formula.root):
             for val in relations_instantiation_map.values():
                 for var in val[1].free_variables():
@@ -184,6 +184,7 @@ class Schema:
                    type(instantiation_map[variable]) is str
         # Task 9.4
         try:
+            # new_self=copy.deepcopy(self)
             constants_and_variables_instantiation_map = dict()
             relations_instantiation_map = dict()
             bound_variables = set()
@@ -225,10 +226,10 @@ class Proof:
 
     class Line:
         """ A line in a proof, containing a first-order formula deduced in this
-            line, alongside a justificaiton that is a tuple of one of the
+            line, alongside a justification that is a tuple of one of the
             following forms (corresponding to the four respective forms of
             lines listed above):
-            1) ('A', assumption, instantiation_map), where assumption is an
+            1) ('A', assumption, instantiation_map), where assumption is
                an index of an assumption/axiom and instantiation_map is a map
                from the templates of this assumption/axiom to substitution
                elements
@@ -273,8 +274,7 @@ class Proof:
         assert type(justification[1]) is int
         assert type(justification[2]) is dict
         for variable in justification[2]:
-            assert type(variable) is str and \
-                   type(justification[2][variable]) is str
+            assert type(variable) is str and type(justification[2][variable]) is str
         # Task 9.5
         schemata = self.assumptions[justification[1]]
         schemata_instance = schemata.instantiate(justification[2])
@@ -293,7 +293,6 @@ class Proof:
         formula = self.lines[line].formula
         prop_formula = PropositionalFormula.from_infix(formula.propositional_skeleton().infix())
         return is_tautology(prop_formula)
-
 
     def verify_mp_justification(self, line):
         """ Returns whether the line with the given number is validly obtained
@@ -316,7 +315,6 @@ class Proof:
         if not first_implies_second.second == conclusion:
             return False
         return True
-
 
     def verify_ug_justification(self, line):
         """ Returns whether the line with the given number a valid universal

@@ -502,6 +502,7 @@ class Formula:
                 res = Formula('=', res, x)
         return res
 
+    # (((Ax[(Man(x)->Ex[Mortal(x)])]&Ex[Man(x)])->Ex[Mortal(x)])->Ex[Mortal(x)])
     @staticmethod
     def parse_with_SAME(s):
         """ Return a first-order formula parsed from its given string
@@ -594,7 +595,7 @@ class Formula:
             assert (is_constant(element_name) or is_variable(element_name)) and \
                    type(substitution_map[element_name]) is Term
         # Task 9.2
-        new_func = self
+        new_func = copy.deepcopy(self)
         if is_term(new_func.root):
             return new_func.substitute(substitution_map)
         elif is_quantifier(new_func.root):
@@ -623,30 +624,30 @@ class Formula:
         return self.propositional_skeleton_helper(switches_dict)
 
     def propositional_skeleton_helper(self, switches_dict):
-        root = self.root
+        self_copy = copy.deepcopy(self)
+        root = self_copy.root
         if is_variable(root):
-            return self
+            return self_copy
         elif is_relation(root):
-            if self not in switches_dict:
-                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
-            self.root = switches_dict[self]
-            self.arguments = None
+            if self_copy not in switches_dict:
+                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
+            self_copy.root = switches_dict[self_copy]
+            self_copy.arguments = None
         elif is_equality(root):
-            if self not in switches_dict:
-                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
-            self.root = switches_dict[self]
-            self.first = None
-            self.second = None
+            if self_copy not in switches_dict:
+                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
+            self_copy.root = switches_dict[self_copy]
+            self_copy.first = None
+            self_copy.second = None
         elif is_quantifier(root):
-            if self not in switches_dict:
-                switches_dict[copy.deepcopy(self)] = next(fresh_variable_name_generator)
-            self.root = switches_dict[self]
-            self.variable = None
-            self.predicate = None
+            if self_copy not in switches_dict:
+                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
+            self_copy.root = switches_dict[self_copy]
+            self_copy.variable = None
+            self_copy.predicate = None
         elif is_unary(root):
-            self.first = self.first.propositional_skeleton_helper(switches_dict)
+            self_copy.first = self_copy.first.propositional_skeleton_helper(switches_dict)
         else:
-            self.first = self.first.propositional_skeleton_helper(switches_dict)
-            self.second = self.second.propositional_skeleton_helper(switches_dict)
-        return self
-
+            self_copy.first = self_copy.first.propositional_skeleton_helper(switches_dict)
+            self_copy.second = self_copy.second.propositional_skeleton_helper(switches_dict)
+        return self_copy
