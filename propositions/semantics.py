@@ -107,11 +107,12 @@ def truth_values(formula, models):
 def is_tautology(formula):
     """ Return whether the given formula is a tautology """
     # Task 2.4
-    list_of_truth_values = truth_values(formula, all_models(list(formula.variables())))
-    for truth_value in list_of_truth_values:
-        if not truth_value:
-            return False
-    return True
+    # list_of_truth_values = truth_values(formula, all_models(list(formula.variables())))
+    return False not in truth_values(formula, all_models(list(formula.variables())))
+    # for truth_value in list_of_truth_values:
+    #     if not truth_value:
+    #         return False
+    # return True
 
 
 def print_truth_table(formula):

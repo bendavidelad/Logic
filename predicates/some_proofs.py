@@ -14,10 +14,18 @@ def lovers_proof(print_as_proof_forms=False):
         Everybody loves everybody.
         The Boolean flag print_as_proof_forms specifies whether the proof being
         constructed is to be printed in real time as it is being constructed """
-    prover = Prover(['Ax[Ey[Loves(x,y)]]',
-                     'Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]'],
+    prover = Prover(['Ax[Ey[Loves(x,y)]]', 'Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]'],
                     'Ax[Az[Loves(z,x)]]', print_as_proof_forms)
     # Task 10.4
+    step1 = prover.add_assumption('Ax[Ey[Loves(x,y)]]')
+    step2 = prover.add_assumption('Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]')
+    step3 = prover.add_universal_instantiation('Ey[Loves(x,y)]', step1, 'x')
+    step4 = prover.add_universal_instantiation('Az[Ay[(Loves(x,y)->Loves(z,x))]]', step2, 'x')
+    step5 = prover.add_universal_instantiation('Ay[(Loves(x,y)->Loves(z,x))]', step4, 'z')
+    step6 = prover.add_universal_instantiation('(Loves(x,y)->Loves(z,x))', step5, 'y')
+    step7 = prover.add_existential_derivation('Loves(z,x)', step3, step6)
+    step8 = prover.add_ug('Az[Loves(z,x)]', step7)
+    step9 = prover.add_ug('Ax[Az[Loves(z,x)]]', step8)
     return prover.proof
 
 
@@ -29,10 +37,21 @@ def homework_proof(print_as_proof_forms=False):
         Some reading is not fun.
         The Boolean flag print_as_proof_forms specifies whether the proof being
         constructed is to be printed in real time as it is being constructed """
-    prover = Prover(['~Ex[(Homework(x)&Fun(x))]',
-                     'Ex[(Homework(x)&Reading(x))]'],
+    prover = Prover(['~Ex[(Homework(x)&Fun(x))]', 'Ex[(Homework(x)&Reading(x))]'],
                     'Ex[(Reading(x)&~Fun(x))]', print_as_proof_forms)
     # Task 10.5
+    step1 = prover.add_assumption('~Ex[(Homework(x)&Fun(x))]')
+    step2 = prover.add_assumption('Ex[(Homework(x)&Reading(x))]')
+    step3 = prover.add_instantiated_assumption('((Homework(x)&Fun(x))->Ex[(Homework(x)&Fun(x))])', Prover.EI,
+                                               {'R(v)': '(Homework(v)&Fun(v))', 'c': 'x'})
+    step4 = prover.add_tautological_inference('(~(Homework(x)&Fun(x)))', [step1, step3])
+    step5 = prover.add_tautological_inference('(Homework(x)->~Fun(x))', [step4])
+    step6 = prover.add_tautological_inference('((Homework(x)&Reading(x))->(Reading(x)&~Fun(x)))', [step5])
+    step7 = prover.add_instantiated_assumption('((Reading(x)&~Fun(x))->Ex[(Reading(x)&~Fun(x))])', Prover.EI,
+                                               {'R(v)': '(Reading(v)&~Fun(v))', 'c': 'x'})
+    step8 = prover.add_tautological_inference('((Homework(x)&Reading(x))->Ex[(Reading(x)&~Fun(x))])',
+                                              [step7, step6])
+    step9 = prover.add_existential_derivation('Ex[(Reading(x)&~Fun(x))]', step2, step8)
     return prover.proof
 
 

@@ -5,7 +5,6 @@
 
 from predicates.some_proofs import *
 
-
 def test_lovers_proof(debug=False):
     proof = lovers_proof(debug)
     assert proof.assumptions == \
@@ -14,7 +13,6 @@ def test_lovers_proof(debug=False):
     assert str(proof.conclusion) == 'Ax[Az[Loves(z,x)]]'
     # Will be tested with the course staff's implementation of is_valid
     assert proof.is_valid()
-
 
 def test_homework_proof(debug=False):
     proof = homework_proof(debug)
@@ -25,7 +23,6 @@ def test_homework_proof(debug=False):
     # Will be tested with the course staff's implementation of is_valid
     assert proof.is_valid()
 
-
 def test_unique_zero_proof(debug=False):
     proof = unique_zero_proof(debug)
     assert proof.assumptions == \
@@ -35,7 +32,6 @@ def test_unique_zero_proof(debug=False):
     # Will be tested with the course staff's implementation of is_valid
     assert proof.is_valid()
 
-
 def test_multiply_zero_proof(debug=False):
     proof = multiply_zero_proof(debug)
     assert proof.assumptions == \
@@ -43,7 +39,6 @@ def test_multiply_zero_proof(debug=False):
     assert str(proof.conclusion) == 'times(0,x)=0'
     # Will be tested with the course staff's implementation of is_valid
     assert proof.is_valid()
-
 
 def test_peano_zero_proof(debug=False):
     proof = peano_zero_proof(debug)
@@ -53,7 +48,6 @@ def test_peano_zero_proof(debug=False):
     assert str(proof.conclusion) == 'plus(0,x)=x'
     # Will be tested with the course staff's implementation of is_valid
     assert proof.is_valid()
-
 
 def test_russell_paradox_proof(debug=False):
     proof = russell_paradox_proof(debug)

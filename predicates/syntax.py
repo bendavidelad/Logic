@@ -530,7 +530,7 @@ class Formula:
         elif is_equality(self.root):
             return self.first.variables() | self.second.variables()
         elif is_unary(self.root):
-            return self.first.free_variables() | self.second.free_variables()
+            return self.first.free_variables()
         elif is_binary(self.root):
             return self.first.free_variables() | self.second.free_variables()
         elif is_quantifier(self.root):
@@ -605,7 +605,7 @@ class Formula:
             new_func.predicate = new_func.predicate.substitute(new_map)
             return new_func
         elif is_unary(new_func.root):
-            new_func.first = new_func.second.substitute(substitution_map)
+            new_func.first = new_func.first.substitute(substitution_map)
         elif is_relation(new_func.root):
             for i, term in enumerate(new_func.arguments):
                 new_func.arguments[i] = term.substitute(substitution_map)
@@ -651,3 +651,4 @@ class Formula:
             self_copy.first = self_copy.first.propositional_skeleton_helper(switches_dict)
             self_copy.second = self_copy.second.propositional_skeleton_helper(switches_dict)
         return self_copy
+

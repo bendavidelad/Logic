@@ -139,12 +139,10 @@ def syllogism_all_exists_proof_with_existential_derivation(print_as_proof_forms=
                     print_as_proof_forms)
     step1 = prover.add_assumption('Ax[(Man(x)->Mortal(x))]')
     step2 = prover.add_assumption('Ex[Man(x)]')
-    step3 = prover.add_universal_instantiation('(Man(x)->Mortal(x))', step1,
-                                               'x')
-    step4 = prover.add_instantiated_assumption(
-        '(Mortal(x)->Ex[Mortal(x)])', Prover.EI, {'R(v)': 'Mortal(v)', 'c': 'x'})
-    step5 = prover.add_tautological_inference('(Man(x)->Ex[Mortal(x)])',
-                                              [step3, step4])
+    step3 = prover.add_universal_instantiation('(Man(x)->Mortal(x))', step1, 'x')
+    step4 = prover.add_instantiated_assumption('(Mortal(x)->Ex[Mortal(x)])', Prover.EI,
+                                               {'R(v)': 'Mortal(v)', 'c': 'x'})
+    step5 = prover.add_tautological_inference('(Man(x)->Ex[Mortal(x)])', [step3, step4])
     step6 = prover.add_existential_derivation('Ex[Mortal(x)]', step2, step5)
     return prover.proof
 

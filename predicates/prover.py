@@ -76,8 +76,7 @@ class Prover:
             this proof. The number of the added line in this proof is returned
         """
         assert type(assumption) is Formula or type(assumption) is str
-        return self.add_instantiated_assumption(
-            assumption, Schema(str(assumption)), {})
+        return self.add_instantiated_assumption(assumption, Schema(str(assumption)), {})
 
     def add_tautology(self, tautology):
         """ Append to the proof being constructed a validly justified line
@@ -136,12 +135,15 @@ class Prover:
             'Az[f(x,h(w))=g(z,h(w))]'. The number of the (new) line in this
             proof containing instantiation is returned """
         # Task 10.1
-        temp = copy.deepcopy(self.proof.lines[line_number].formula.predicate).substitute(
+        temp = self.proof.lines[line_number].formula.predicate.substitute(
             {self.proof.lines[line_number].formula.variable: Term('v')}).infix()
 
-        step1 = self.add_instantiated_assumption(
-            '(' + self.proof.lines[line_number].formula.infix() + '->' + instantiation + ')', self.UI,
-            {'R(v)': temp, 'c': term})
+        x_str = '(' + self.proof.lines[line_number].formula.infix() + '->' + instantiation + ')'
+        justification = {'R(v)': temp, 'c': term}
+        if is_quantifier(x_str[1]):
+            x = x_str[2:x_str.find('[')]
+            justification['x'] = x
+        step1 = self.add_instantiated_assumption(x_str, self.UI, justification)
         return self.add_mp(instantiation, line_number, step1)
 
     def add_tautological_inference(self, conclusion, line_numbers):
@@ -156,6 +158,7 @@ class Prover:
         temp = self.proof.lines[line_numbers[0]].formula.infix()
         lines = [temp]
         count = 1
+        i = 0
         for i in line_numbers[1:]:
             count += 1
             temp = self.proof.lines[i].formula.infix()
@@ -163,9 +166,13 @@ class Prover:
                 lines[j] = lines[j] + '->(' + temp
             lines.append(temp)
         step = self.add_tautology('(' + lines[0] + '->' + conclusion + ')' * count)
-        for i in range(len(lines) - 1):
-            count -= 1
-            step = self.add_mp('(' + lines[i + 1] + '->' + conclusion + ')' * count, line_numbers[i], step)
+        if len(lines)>1:
+            for i in range(len(lines) - 1):
+                count -= 1
+                step = self.add_mp('(' + lines[i + 1] + '->' + conclusion + ')' * count, line_numbers[i], step)
+        else:
+            return self.add_mp( conclusion , line_numbers[i], step)
+
         return self.add_mp(conclusion, line_numbers[i + 1], step)
 
     def add_existential_derivation(self, statement, line1, line2):
@@ -176,15 +183,22 @@ class Prover:
             'cond(x)->statement' (where x is not free is statement). The number
             of the (new) line in this proof containing statement is returned """
         # Task 10.3
-        variables = self.proof.lines[line2].formula.free_variables()
-        v = next(iter(variables))
-        step1 = self.add_ug('A' + v + '[' + self.proof.lines[line2].formula.infix() + ']', line2)
-        line_str = '((A' + v + '[' + self.proof.lines[line2].formula.infix() + ']&' + self.proof.lines[
-            line1].formula.infix() + ')->' + self.proof.lines[line2].formula.second.infix() + ')'
-        sub_map = {'R(v)': self.proof.lines[line2].formula.first.substitute({v: Term('v')}).infix(),
+        variable = self.proof.lines[line1].formula.variable
+        temp = 'A' + variable + '[' + self.proof.lines[line2].formula.infix() + ']'
+        step1 = self.add_ug(temp, line2)
+        line_str = '((' + temp + '&' + self.proof.lines[line1].formula.infix() + ')->' + self.proof.lines[
+            line2].formula.second.infix() + ')'
+        sub_map = {'R(v)': self.proof.lines[line2].formula.first.substitute({variable: Term('v')}).infix(),
                    'Q()': self.proof.lines[line2].formula.second.infix()}
+        if 'A' in line_str:
+            x = line_str[line_str.find('A') + 1:line_str.find('[')]
+            sub_map['x'] = x
+        elif 'E' in line_str:
+            x = line_str[line_str.find('E') + 1:line_str.find('[')]
+            sub_map['x'] = x
+
         step2 = self.add_instantiated_assumption(line_str, self.ES, sub_map)
-        return self.add_tautological_inference('Ex[Mortal(x)]', [line1, step1, step2])
+        return self.add_tautological_inference(statement, [line1, step1, step2])
 
     def add_flipped_equality(self, flipped, line_number):
         """ Add a sequence of validly justified lines to the proof being
@@ -192,7 +206,7 @@ class Prover:
             which is an equality of the form 'c=d' (for some terms c, d) where
             the formula in line line_numer in this proof is 'd=c'. The number
             of the (new) line in this proof containing flipped is returned """
-        # Task 10.6ג
+        # Task 10.6
 
     def add_free_instantiation(self, instantiation, line_number,
                                substitution_map):

@@ -609,11 +609,10 @@ def proof_or_counterexample_for_inference(rule):
         proof_assumptions2[ass.infix()] = j
     if len(proof_assumptions) > 1:
         proof_assumptions3.append(proof_assumptions[0])
-    for i in range(1,len(proof_assumptions) ):
+    for i in range(1, len(proof_assumptions)):
         formula = Formula(AND, proof_assumptions[i].conclusion, proof_assumptions3[- 1].conclusion)
         line1 = DeductiveProof.Line(Formula(IMP, proof_assumptions[i].conclusion,
-                                            Formula(IMP, proof_assumptions3[- 1].conclusion, formula)),
-                                    6, [])
+                                            Formula(IMP, proof_assumptions3[- 1].conclusion, formula)), 6, [])
         line2 = DeductiveProof.Line(Formula(IMP, proof_assumptions3[- 1].conclusion, formula), 0,
                                     [proof_assumptions2[proof_assumptions[i].conclusion.infix()],
                                      len(proof_assumptions)])

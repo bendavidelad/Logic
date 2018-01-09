@@ -103,7 +103,7 @@ class Schema:
         if is_relation(formula.root):
             for val in relations_instantiation_map.values():
                 for var in val[1].free_variables():
-                    if var in bound_variables:
+                    if var in bound_variables and var not in constants_and_variables_instantiation_map:
                         raise Schema.BoundVariableError(var, val)
             for i, term in enumerate(new_formula.arguments):
                 new_formula.arguments[i] = term.substitute(constants_and_variables_instantiation_map)
@@ -135,16 +135,16 @@ class Schema:
             variable_determine = formula.variable
             if variable_determine in constants_and_variables_instantiation_map:
                 variable_determine = constants_and_variables_instantiation_map[variable_determine].infix()
-            bound_variables = bound_variables | {variable_determine}
+            bound_variables1 = bound_variables | {variable_determine}
             if formula.variable in constants_and_variables_instantiation_map:
                 formula.variable = constants_and_variables_instantiation_map[formula.variable].infix()
             return Formula(formula.root, formula.variable, Schema.instantiate_formula(
-                formula.predicate, new_map, relations_instantiation_map, bound_variables))
+                formula.predicate, new_map, relations_instantiation_map, bound_variables1))
         elif is_constant(formula.root) or is_variable(formula.root):
             return formula.substitute(constants_and_variables_instantiation_map)
         elif is_unary(new_formula.root):
             new_formula.first = Schema.instantiate_formula(
-                new_formula.second, constants_and_variables_instantiation_map, relations_instantiation_map,
+                new_formula.first, constants_and_variables_instantiation_map, relations_instantiation_map,
                 bound_variables)
         return new_formula
 
@@ -180,15 +180,12 @@ class Schema:
             since the assignment to Q(v) may not use any variable name (except
             for the formal parameter v of Q(v)) from the schema formula """
         for variable in instantiation_map:
-            assert type(variable) is str and \
-                   type(instantiation_map[variable]) is str
+            assert type(variable) is str and type(instantiation_map[variable]) is str
         # Task 9.4
         try:
-            # new_self=copy.deepcopy(self)
             constants_and_variables_instantiation_map = dict()
             relations_instantiation_map = dict()
             bound_variables = set()
-
             for i in instantiation_map.keys():
                 if is_constant(i) or is_variable(i):
                     if i not in self.templates:
@@ -197,11 +194,8 @@ class Schema:
                 elif is_relation(i[:i.find('(')]):
                     if i[:i.find('(')] not in self.templates:
                         return None
-
-                    x = Formula.parse(i)
-                    # {'R': (['v'], Formula.parse('v=1'))}
                     args = []
-                    for arg in x.arguments:
+                    for arg in Formula.parse(i).arguments:
                         args.append(arg.infix())
                     relations_instantiation_map[(i[:i.find('(')])] = (
                         args, Formula.parse(instantiation_map[i]))
