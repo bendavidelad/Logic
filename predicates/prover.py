@@ -324,4 +324,5 @@ class Prover:
         for line_number in iter_lines:
             second_line = line_number
             first_line = self._add_chained_two_equalities(first_line, second_line)
+        assert (str(self.proof.lines[first_line].formula) == chained)
         return first_line
