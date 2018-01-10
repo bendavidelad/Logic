@@ -207,6 +207,19 @@ class Prover:
             the formula in line line_numer in this proof is 'd=c'. The number
             of the (new) line in this proof containing flipped is returned """
         # Task 10.6
+        tau_eq_sig = self.proof.lines[line_number].formula
+        tau = tau_eq_sig.first
+        sig = tau_eq_sig.second
+        tau_eq_tau = Formula("=", tau, tau)
+        sig_eq_tau = Formula("=", sig, tau)
+        me_applies = Formula("->", tau_eq_tau, sig_eq_tau)
+        me_total = Formula("->", tau_eq_sig, me_applies)
+        step1 = self.add_instantiated_assumption(str(me_total), Prover.ME, {'R(v)': 'v=' + str(tau), 'c': str(tau), 'd': str(sig)})
+        step2 = self.add_mp(str(me_applies), line_number, step1)
+        step3 = self.add_instantiated_assumption(str(tau_eq_tau), Prover.RX, {'c': str(tau)})
+        step4 = self.add_mp(str(sig_eq_tau), step3, step2)
+        assert (str(sig_eq_tau) == flipped)
+        return step4
 
     def add_free_instantiation(self, instantiation, line_number,
                                substitution_map):
@@ -220,6 +233,21 @@ class Prover:
             instantiation should be 'Az[f(x,h(w))=g(z,h(w))]'. The number of the
             (new) line in this proof containing instantiation is returned """
         # Task 10.7
+        new_substitution_map = {}
+        lines = self.proof.lines
+        for key in substitution_map:
+            current_fresh = next(fresh_variable_name_generator)
+            new_substitution_map[current_fresh] = substitution_map[key]
+            after_ug = "A" + key + "[" + str(lines[line_number].formula) + "]"
+            current_ug_line = self.add_ug(after_ug , line_number)
+            after_ui = str(lines[line_number].formula).replace(key, current_fresh)
+            current_ui_line = self.add_universal_instantiation(after_ui,current_ug_line, current_fresh)
+        for key in new_substitution_map:
+            after_ug = "A" + key + "[" + str(lines[current_ui_line].formula) + "]"
+            current_ug_line = self.add_ug(after_ug, current_ui_line)
+            after_ui = str(lines[current_ui_line].formula).replace(key, new_substitution_map[key])
+            current_ui_line = self.add_universal_instantiation(after_ui, current_ug_line, new_substitution_map[key])
+        return current_ui_line
 
     def add_substituted_equality(self, substituted, line_number,
                                  term_with_free_v):
