@@ -261,6 +261,23 @@ class Prover:
             is 'v+7', then substituted should be 'g(x)+7=h(y)+7'. The number of
             the (new) line in this proof containing substituted is returned """
         # Task 10.8
+        lines = self.proof.lines
+        left_side = lines[line_number].formula.first
+        right_side = lines[line_number].formula.second
+        term_with_v_as_left = Term.parse(term_with_free_v).substitute({'v': left_side})
+        term_with_v_as_right = Term.parse(term_with_free_v).substitute({'v': right_side})
+        left_eq_left = Formula("=", term_with_v_as_left, term_with_v_as_left)
+        left_eq_right = Formula("=", term_with_v_as_left, term_with_v_as_right)
+        me_applies = Formula("->", left_eq_left, left_eq_right)
+        me_total = Formula("->", lines[line_number].formula, me_applies)
+        step1 = self.add_instantiated_assumption(str(me_total),Prover.ME, {'R(v)': str(term_with_v_as_left) + '=' + str(term_with_free_v), 'c': str(left_side), 'd': str(right_side)})
+        step2 = self.add_mp(str(me_applies), line_number, step1)
+        step3 = self.add_instantiated_assumption(str(left_eq_left), Prover.RX, {'c': str(term_with_v_as_left)})
+        step4 = self.add_mp(str(left_eq_right), step3, step2)
+        return step4
+
+
+
 
     def _add_chained_two_equalities(self, line1, line2):
         """ Add a sequence of validly justified lines to the proof being
