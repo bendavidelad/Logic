@@ -74,7 +74,6 @@ def test_inverse_mp(debug=False):
                                              proof.conclusion)
         # Will be tested with the course staff's implementation of is_valid
         assert result1.is_valid()
-
         if (debug):
             print("Testing inverse_mp with assumption '" + assumption2 +
                   "'for the following proof:\n" + str(result1))
