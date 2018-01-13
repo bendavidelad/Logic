@@ -32,15 +32,29 @@ def equivalence_of(formula1, formula2):
     return Formula('&', Formula('->', formula1, formula2),
                    Formula('->', formula2, formula1))
 
+
 def is_quantifier_free(formula):
     """ Return whether the given formula contains any quantifiers """
     assert type(formula) is Formula
     # Task 11.3.1
+    if is_quantifier(formula.root):
+        return False
+    else:
+        if is_unary(formula.root):
+            return is_quantifier_free(formula.first)
+        elif is_binary(formula.root):
+            return is_quantifier_free(formula.first) and is_quantifier_free(formula.second)
+        return True
+
 
 def is_in_prenex_normal_form(formula):
     """ Return whether the given formula is in prenex normal form """
     assert type(formula) is Formula
     # Task 11.3.2
+    if is_quantifier(formula.root):
+        return is_in_prenex_normal_form(formula.predicate)
+    else:
+        return is_quantifier_free(formula)
 
 def make_quantified_variables_unique(formula):
     """ Takes a formula and returns a pair: an equivalent formula with the
