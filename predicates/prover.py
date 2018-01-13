@@ -137,12 +137,10 @@ class Prover:
         # Task 10.1
         temp = self.proof.lines[line_number].formula.predicate.substitute(
             {self.proof.lines[line_number].formula.variable: Term('v')}).infix()
-
         x_str = '(' + self.proof.lines[line_number].formula.infix() + '->' + instantiation + ')'
         justification = {'R(v)': temp, 'c': term}
         if is_quantifier(x_str[1]):
-            x = x_str[2:x_str.find('[')]
-            justification['x'] = x
+            justification['x'] = x_str[2:x_str.find('[')]
         step1 = self.add_instantiated_assumption(x_str, self.UI, justification)
         return self.add_mp(instantiation, line_number, step1)
 
@@ -154,26 +152,23 @@ class Prover:
             number of the (new) line in this proof containing conclusion is
             returned """
         # Task 10.2
-
         temp = self.proof.lines[line_numbers[0]].formula.infix()
         lines = [temp]
-        count = 1
-        i = 0
+        count, i = 1, 0
         for i in line_numbers[1:]:
             count += 1
             temp = self.proof.lines[i].formula.infix()
             for j in range(len(lines)):
                 lines[j] = lines[j] + '->(' + temp
             lines.append(temp)
-        step = self.add_tautology('(' + lines[0] + '->' + conclusion + ')' * count)
-        if len(lines)>1:
+        s = self.add_tautology('(' + lines[0] + '->' + conclusion + ')' * count)
+        if len(lines) > 1:
             for i in range(len(lines) - 1):
                 count -= 1
-                step = self.add_mp('(' + lines[i + 1] + '->' + conclusion + ')' * count, line_numbers[i], step)
+                s = self.add_mp('(' + lines[i + 1] + '->' + conclusion + ')' * count, line_numbers[i], s)
         else:
-            return self.add_mp( conclusion , line_numbers[i], step)
-
-        return self.add_mp(conclusion, line_numbers[i + 1], step)
+            return self.add_mp(conclusion, line_numbers[i], s)
+        return self.add_mp(conclusion, line_numbers[i + 1], s)
 
     def add_existential_derivation(self, statement, line1, line2):
         """ Add a sequence of validly justified lines to the proof being
@@ -207,9 +202,22 @@ class Prover:
             the formula in line line_numer in this proof is 'd=c'. The number
             of the (new) line in this proof containing flipped is returned """
         # Task 10.6
+        tau_eq_sig = self.proof.lines[line_number].formula
+        tau = tau_eq_sig.first
+        sig = tau_eq_sig.second
+        tau_eq_tau = Formula("=", tau, tau)
+        sig_eq_tau = Formula("=", sig, tau)
+        me_applies = Formula("->", tau_eq_tau, sig_eq_tau)
+        me_total = Formula("->", tau_eq_sig, me_applies)
+        step1 = self.add_instantiated_assumption(str(me_total), Prover.ME,
+                                                 {'R(v)': 'v=' + str(tau), 'c': str(tau), 'd': str(sig)})
+        step2 = self.add_mp(str(me_applies), line_number, step1)
+        step3 = self.add_instantiated_assumption(str(tau_eq_tau), Prover.RX, {'c': str(tau)})
+        step4 = self.add_mp(str(sig_eq_tau), step3, step2)
+        assert (str(sig_eq_tau) == flipped)
+        return step4
 
-    def add_free_instantiation(self, instantiation, line_number,
-                               substitution_map):
+    def add_free_instantiation(self, instantiation, line_number, substitution_map):
         """ Append a sequence of validly justified lines to the proof being
             constructed, where the formula of the last line is statement, which
             is an instantiation of the formula in line line_number in this
@@ -220,9 +228,26 @@ class Prover:
             instantiation should be 'Az[f(x,h(w))=g(z,h(w))]'. The number of the
             (new) line in this proof containing instantiation is returned """
         # Task 10.7
+        new_substitution_map = {}
+        lines = self.proof.lines
+        current_ui_line = line_number
+        for key in substitution_map:
+            current_fresh = next(fresh_variable_name_generator)
+            new_substitution_map[current_fresh] = substitution_map[key]
+            after_ug = "A" + key + "[" + str(lines[current_ui_line].formula) + "]"
+            current_ug_line = self.add_ug(after_ug, current_ui_line)
+            after_ui = lines[current_ui_line].formula.substitute({key: Term.parse(current_fresh)})
+            current_ui_line = self.add_universal_instantiation(str(after_ui), current_ug_line, current_fresh)
+        for key in new_substitution_map:
+            after_ug = "A" + key + "[" + str(lines[current_ui_line].formula) + "]"
+            current_ug_line = self.add_ug(after_ug, current_ui_line)
+            after_ui = lines[current_ui_line].formula.substitute({key: Term.parse(new_substitution_map[key])})
+            current_ui_line = self.add_universal_instantiation(str(after_ui), current_ug_line,
+                                                               new_substitution_map[key])
+        assert (instantiation == after_ui)
+        return current_ui_line
 
-    def add_substituted_equality(self, substituted, line_number,
-                                 term_with_free_v):
+    def add_substituted_equality(self, substituted, line_number, term_with_free_v):
         """ Add a sequence of validly justified lines to the proof being
             constructed, where the formula of the last line is substituted,
             which is an equality of two terms, each of which is derived by
@@ -233,6 +258,24 @@ class Prover:
             is 'v+7', then substituted should be 'g(x)+7=h(y)+7'. The number of
             the (new) line in this proof containing substituted is returned """
         # Task 10.8
+        lines = self.proof.lines
+        left_side = lines[line_number].formula.first
+        right_side = lines[line_number].formula.second
+        term_with_v_as_left = Term.parse(term_with_free_v).substitute({'v': left_side})
+        term_with_v_as_right = Term.parse(term_with_free_v).substitute({'v': right_side})
+        left_eq_left = Formula("=", term_with_v_as_left, term_with_v_as_left)
+        left_eq_right = Formula("=", term_with_v_as_left, term_with_v_as_right)
+        me_applies = Formula("->", left_eq_left, left_eq_right)
+        me_total = Formula("->", lines[line_number].formula, me_applies)
+        step1 = self.add_instantiated_assumption(str(me_total), Prover.ME, {
+            'R(v)': str(term_with_v_as_left) + '=' + str(term_with_free_v), 'c': str(left_side),
+            'd': str(right_side)})
+        step2 = self.add_mp(str(me_applies), line_number, step1)
+        step3 = self.add_instantiated_assumption(str(left_eq_left), Prover.RX,
+                                                 {'c': str(term_with_v_as_left)})
+        step4 = self.add_mp(str(left_eq_right), step3, step2)
+        assert (substituted == str(left_eq_right))
+        return step4
 
     def _add_chained_two_equalities(self, line1, line2):
         """ Add a sequence of validly justified lines to the proof being
@@ -245,6 +288,22 @@ class Prover:
             (new) line in this proof containing the chained equality is
             returned """
         # Task 10.9.1
+        lines = self.proof.lines
+        a_eq_b = lines[line1].formula
+        b_eq_c = lines[line2].formula
+        a = a_eq_b.first
+        b = a_eq_b.second
+        c = b_eq_c.second
+        b_eq_a = Formula("=", b, a)
+        a_eq_c = Formula("=", a, c)
+        step1 = self.add_flipped_equality(b_eq_a, line1)
+        me_applies = Formula("->", b_eq_c, a_eq_c)
+        me_total = Formula("->", b_eq_a, me_applies)
+        step2 = self.add_instantiated_assumption(str(me_total), Prover.ME,
+                                                 {'R(v)': 'v=' + str(c), 'c': str(b), 'd': str(a)})
+        step3 = self.add_mp(str(me_applies), step1, step2)
+        step4 = self.add_mp(str(a_eq_c), line2, step3)
+        return step4
 
     def add_chained_equality(self, chained, line_numbers):
         """ Add a sequence of validly justified lines to the proof being
@@ -257,3 +316,10 @@ class Prover:
             if line_numbers=[7,3,9], then chained should be 'a=0'. The number of
             the (new) line in this proof containing substituted is returned """
         # Task 10.9.2
+        iter_lines = iter(line_numbers)
+        first_line = next(iter_lines)
+        for line_number in iter_lines:
+            second_line = line_number
+            first_line = self._add_chained_two_equalities(first_line, second_line)
+        assert (str(self.proof.lines[first_line].formula) == chained)
+        return first_line

@@ -3,27 +3,30 @@
     by Gonczarowski and Nisan.
     File name: code/propositions/syntax.py """
 
+
 def is_variable(s):
     """ Is s an atomic proposition?  """
     return s[0] >= 'p' and s[0] <= 'z' and (len(s) == 1 or s[1:].isdigit())
+
 
 def is_unary(s):
     """ Is s a unary operator? """
     return s == '~'
 
+
 def is_binary(s):
     """ Is s a binary operator? """
     return s == '&' or s == '|' or s == '->' or s == '<->' or s == '-&' or s == '-|'
+
 
 def is_ternary(s):
     """ Is s a ternary operator? """
     return s == '?:'
 
+
 def is_constant(s):
     """ Is s a constant? """
     return s == 'T' or s == 'F'
-
-
 
 
 class Formula:
@@ -78,13 +81,16 @@ class Formula:
                     parenthesis_counter -= 1
                 elif s[letter] == '&' or s[letter] == '|':
                     if parenthesis_counter == 0:
-                        return Formula(s[letter], Formula.from_infix(s[1:letter]), Formula.from_infix((s[letter + 1:-1])))
+                        return Formula(s[letter], Formula.from_infix(s[1:letter]),
+                                       Formula.from_infix((s[letter + 1:-1])))
                 elif s[letter] == '-':
                     if parenthesis_counter == 0:
-                        return Formula(s[letter:letter + 2], Formula.from_infix(s[1:letter]), Formula.from_infix((s[letter + 2:-1])))
+                        return Formula(s[letter:letter + 2], Formula.from_infix(s[1:letter]),
+                                       Formula.from_infix((s[letter + 2:-1])))
                 elif s[letter] == '<':
                     if parenthesis_counter == 0:
-                        return Formula(s[letter:letter + 3], Formula.from_infix(s[1:letter]), Formula.from_infix((s[letter + 3:-1])))
+                        return Formula(s[letter:letter + 3], Formula.from_infix(s[1:letter]),
+                                       Formula.from_infix((s[letter + 3:-1])))
                 elif s[letter] == '?':
                     if parenthesis_counter == 0:
                         second_parenthesis_counter = 0
@@ -99,7 +105,8 @@ class Formula:
                                 second_parenthesis_counter -= 1
                             colon += 1
                         return Formula(s[letter] + s[colon], Formula.from_infix(s[1:letter]),
-                                       Formula.from_infix(s[letter + 1:colon]), Formula.from_infix(s[colon + 1: -1]))
+                                       Formula.from_infix(s[letter + 1:colon]),
+                                       Formula.from_infix(s[colon + 1: -1]))
         else:
             return Formula(s)
 
@@ -130,7 +137,7 @@ class Formula:
             while counter > 0:
                 if s[letter] == 'F' or s[letter] == 'T':
                     counter -= 1
-                elif s[letter] >= 'p' and s[letter] <= 'z':
+                elif 'p' <= s[letter] <= 'z':
                     while s[letter + 1].isdigit():
                         letter += 1
                     counter -= 1
@@ -157,7 +164,7 @@ class Formula:
                     if s[second_letter] == 'F' or s[second_letter] == 'T':
                         second_counter -= 1
                         second_letter += 1
-                    elif s[second_letter] >= 'p' and s[second_letter] <= 'z':
+                    elif 'p' <= s[second_letter] <= 'z':
                         while s[second_letter + 1].isdigit():
                             second_letter += 1
                         second_counter -= 1
@@ -173,7 +180,9 @@ class Formula:
                     elif s[second_letter] == '?':
                         second_counter += 2
                         second_letter += 2
-                return Formula(s[0:2], Formula.from_prefix(s[2:letter]), Formula.from_prefix(s[letter:second_letter]), Formula.from_prefix(s[second_letter:]))
+                return Formula(s[0:2], Formula.from_prefix(s[2:letter]),
+                               Formula.from_prefix(s[letter:second_letter]),
+                               Formula.from_prefix(s[second_letter:]))
             else:
                 return Formula(s[0:1], Formula.from_prefix(s[1:letter]), Formula.from_prefix(s[letter:]))
         else:
@@ -192,5 +201,3 @@ class Formula:
             return self.first.variables() | self.second.variables()
         else:
             return self.first.variables() | self.second.variables() | self.third.variables()
-
-

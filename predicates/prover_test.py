@@ -180,10 +180,8 @@ def right_neutral_proof(stop_before_flipped_equality,
     if stop_before_flipped_equality:
         return None
     flipped_zero = prover.add_flipped_equality('x=plus(0,x)', zero)
-    flipped_negation = prover.add_flipped_equality('0=plus(minus(x),x)',
-                                                   negation)
-    flipped_associativity = prover.add_flipped_equality(
-        'plus(x,plus(y,z))=plus(plus(x,y),z)', associativity)
+    flipped_negation = prover.add_flipped_equality('0=plus(minus(x),x)', negation)
+    flipped_associativity = prover.add_flipped_equality('plus(x,plus(y,z))=plus(plus(x,y),z)', associativity)
     if stop_before_free_instantiation:
         return None
     step7 = prover.add_free_instantiation(

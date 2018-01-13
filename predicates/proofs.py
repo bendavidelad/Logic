@@ -286,6 +286,7 @@ class Proof:
         # Task 9.7
         formula = self.lines[line].formula
         prop_formula = PropositionalFormula.from_infix(formula.propositional_skeleton().infix())
+        assert type(prop_formula) is PropositionalFormula
         return is_tautology(prop_formula)
 
     def verify_mp_justification(self, line):

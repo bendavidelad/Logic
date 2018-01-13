@@ -620,35 +620,19 @@ class Formula:
             z1,z2,... (obtained by calling next(fresh_variable_name_generator)),
             starting from left to right """
         # Task 9.5
-        switches_dict = {}
-        return self.propositional_skeleton_helper(switches_dict)
+        return self.propositional_skeleton_helper(dict())
 
     def propositional_skeleton_helper(self, switches_dict):
-        self_copy = copy.deepcopy(self)
-        root = self_copy.root
-        if is_variable(root):
-            return self_copy
-        elif is_relation(root):
-            if self_copy not in switches_dict:
-                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
-            self_copy.root = switches_dict[self_copy]
-            self_copy.arguments = None
-        elif is_equality(root):
-            if self_copy not in switches_dict:
-                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
-            self_copy.root = switches_dict[self_copy]
-            self_copy.first = None
-            self_copy.second = None
-        elif is_quantifier(root):
-            if self_copy not in switches_dict:
-                switches_dict[copy.deepcopy(self_copy)] = next(fresh_variable_name_generator)
-            self_copy.root = switches_dict[self_copy]
-            self_copy.variable = None
-            self_copy.predicate = None
-        elif is_unary(root):
-            self_copy.first = self_copy.first.propositional_skeleton_helper(switches_dict)
+        if is_unary(self.root):
+            return PropositionalFormula(self.root, self.first.propositional_skeleton_helper(switches_dict))
+        if is_binary(self.root):
+            return PropositionalFormula(self.root, self.first.propositional_skeleton_helper(switches_dict),
+                                        self.second.propositional_skeleton_helper(switches_dict))
+        if self in switches_dict:
+            return switches_dict[self]
         else:
-            self_copy.first = self_copy.first.propositional_skeleton_helper(switches_dict)
-            self_copy.second = self_copy.second.propositional_skeleton_helper(switches_dict)
-        return self_copy
-
+            value = PropositionalFormula(next(fresh_variable_name_generator))
+            switches_dict[self] = value
+            return value
+    def variables(self):
+        return self.free_variables()

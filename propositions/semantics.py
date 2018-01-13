@@ -22,45 +22,76 @@ TRUE = 'T'
 def evaluate(formula, model):
     """ Return the truth value of the given formula in the given model """
     # Task 2.1
-    if is_constant(formula.root):
-        if formula.root == 'T':
-            return True
-        elif formula.root == 'F':
-            return False
-    elif is_variable(formula.root):
-        return model[formula.root]
-    elif is_unary(formula.root):
+    if is_unary(formula.root):
         return not evaluate(formula.first, model)
+    elif is_ternary(formula.root):
+        if evaluate(formula.first,model):
+            return evaluate(formula.second,model)
+        else:
+            return evaluate(formula.third,model)
     elif is_binary(formula.root):
         if formula.root == '&':
             return evaluate(formula.first, model) and evaluate(formula.second, model)
         elif formula.root == '|':
             return evaluate(formula.first, model) or evaluate(formula.second, model)
-        elif formula.root == '->':
-            if evaluate(formula.first, model) and not evaluate(formula.second, model):
-                return False
-            else:
-                return True
         elif formula.root == '<->':
-            if (not evaluate(formula.first, model) and not evaluate(formula.second, model)) or (evaluate(formula.first, model) and evaluate(formula.second, model)):
-                return True
-            else:
-                return False
+            return not (evaluate(formula.first, model) ^ evaluate(formula.second, model))
         elif formula.root == '-&':
-            if evaluate(formula.first, model) and evaluate(formula.second, model):
-                return False
-            else:
-                return True
+            return not (evaluate(formula.first, model) and evaluate(formula.second, model))
         elif formula.root == '-|':
-            if not evaluate(formula.first, model) and not evaluate(formula.second, model):
-                return True
-            else:
-                return False
-    else:
-        if evaluate(formula.first, model):
-            return evaluate(formula.second, model)
+            return not (evaluate(formula.first, model) or evaluate(formula.second, model))
         else:
-            return evaluate(formula.third, model)
+            return (not evaluate(formula.first, model)) or evaluate(formula.second, model)
+    elif is_constant(formula.root):
+        if formula.root == 'T':
+            return True
+        else:
+            return False
+    else:
+        return model[formula.root]
+    #
+    # if is_constant(formula.root):
+    #     if formula.root == 'T':
+    #         return True
+    #     elif formula.root == 'F':
+    #         return False
+    # elif is_variable(formula.root):
+    #     return model[formula.root]
+    #
+    # elif is_unary(formula.root):
+    #     return not evaluate(formula.first, model)
+    # assert (type(formula.first) is Formula) and (type(formula.second) is Formula)
+    # if is_binary(formula.root):
+    #     if formula.root == '&':
+    #         return evaluate(formula.first, model) and evaluate(formula.second, model)
+    #     elif formula.root == '|':
+    #         return evaluate(formula.first, model) or evaluate(formula.second, model)
+    #     elif formula.root == '->':
+    #         if evaluate(formula.first, model) and not evaluate(formula.second, model):
+    #             return False
+    #         else:
+    #             return True
+    #     elif formula.root == '<->':
+    #         if (not evaluate(formula.first, model) and not evaluate(formula.second, model)) or (
+    #                     evaluate(formula.first, model) and evaluate(formula.second, model)):
+    #             return True
+    #         else:
+    #             return False
+    #     elif formula.root == '-&':
+    #         if evaluate(formula.first, model) and evaluate(formula.second, model):
+    #             return False
+    #         else:
+    #             return True
+    #     elif formula.root == '-|':
+    #         if not evaluate(formula.first, model) and not evaluate(formula.second, model):
+    #             return True
+    #         else:
+    #             return False
+    # else:
+    #     if evaluate(formula.first, model):
+    #         return evaluate(formula.second, model)
+    #     else:
+    #         return evaluate(formula.third, model)
 
 
 def all_models(variables):
@@ -106,13 +137,13 @@ def truth_values(formula, models):
 
 def is_tautology(formula):
     """ Return whether the given formula is a tautology """
-    # Task 2.4
-    # list_of_truth_values = truth_values(formula, all_models(list(formula.variables())))
-    return False not in truth_values(formula, all_models(list(formula.variables())))
-    # for truth_value in list_of_truth_values:
-    #     if not truth_value:
-    #         return False
-    # return True
+    values = list(formula.variables())
+    if len(values) is 0:
+        return evaluate(formula, {})
+    for m in all_models(values):
+        if not evaluate(formula, m):
+            return False
+    return True
 
 
 def print_truth_table(formula):
@@ -148,7 +179,7 @@ def print_truth_table(formula):
             if model[variable]:
                 print(" T" + variable_spaces + "|", end="")
             else:
-                print(" F" + variable_spaces +  "|", end="")
+                print(" F" + variable_spaces + "|", end="")
         if value:
             print(" T" + formula_spaces + " |")
         else:
@@ -202,7 +233,7 @@ def synthesize(models, values):
 
 def evaluate_inference(rule, model):
     """ Return whether the given inference rule holds in the given model """
-    #Task 4.2
+    # Task 4.2
     if len(rule.assumptions) == 0:
         return is_tautology(rule.conclusion)
     iter_assumps = iter(rule.assumptions)
@@ -222,5 +253,3 @@ def is_tautological_inference(rule):
         if not evaluate_inference(rule, model):
             return False
     return True
-
-
