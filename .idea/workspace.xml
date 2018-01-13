@@ -3,10 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="9c483b0e-d9bb-4033-8387-ed4bed9db000" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/predicates/deduction.py" afterPath="$PROJECT_DIR$/predicates/deduction.py" />
-      <change beforePath="$PROJECT_DIR$/predicates/deduction_test.py" afterPath="$PROJECT_DIR$/predicates/deduction_test.py" />
-      <change beforePath="$PROJECT_DIR$/predicates/some_proofs.py" afterPath="$PROJECT_DIR$/predicates/some_proofs.py" />
-      <change beforePath="$PROJECT_DIR$/predicates/syntax.py" afterPath="$PROJECT_DIR$/predicates/syntax.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -307,7 +303,14 @@
       <option name="project" value="LOCAL" />
       <updated>1515851596864</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="ex 10 done and ex 11 task 1 גםמק">
+      <created>1515874138658</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1515874138658</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -369,7 +372,9 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="1-5 done" />
     <MESSAGE value="ex 10 done and ex 11 task 1 implemented" />
-    <option name="LAST_COMMIT_MESSAGE" value="ex 10 done and ex 11 task 1 implemented" />
+    <MESSAGE value="ex 10 done and ex 11 task 1 גםמק" />
+    <option name="LAST_COMMIT_MESSAGE" value="ex 10 done and ex 11 task 1 גםמק" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
