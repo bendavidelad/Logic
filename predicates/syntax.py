@@ -195,10 +195,16 @@ class Term:
 
 def unary(s):
     if EQU in s:
-        i = s.index(EQU)
-        x = Formula.parse_prefix(s[i + 1:])
-        y = Formula.parse_prefix(s[1:i])
-        return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
+        if ']' in s:
+            i = s.index(EQU)
+            x = Formula.parse_prefix(s[i + 1:s.index(']')])
+            y = Formula.parse_prefix(s[1:i])
+            return [Formula(s[0], Formula(EQU, y[0], x[0])), ']']
+        else:
+            i = s.index(EQU)
+            x = Formula.parse_prefix(s[i + 1:])
+            y = Formula.parse_prefix(s[1:i])
+            return [Formula(s[0], Formula(EQU, y[0], x[0])), x[1]]
     else:
         x = Formula.parse_prefix(s[1:])
         return [Formula(s[0], x[0]), x[1]]
@@ -230,19 +236,21 @@ def quantifier(s):
             closed_par += 1
         i += 1
     predicate, reminder = Formula.parse_prefix(s[last_comma + 1:])
-    if reminder[0] == EQU:
-        x = Term.parse_prefix(reminder[1:])
-        predicate = Formula(EQU, predicate, x[0])
-        reminder = x[1]
-    elif is_binary(reminder[0]):
-        x = Formula.parse_prefix(reminder[1:])
-        predicate = Formula(reminder[0], predicate, x[0])
-        reminder = x[1]
-    elif is_binary(reminder[0:2]):
-        x = Formula.parse_prefix(reminder[2:])
-        predicate = Formula(reminder[0:2], predicate, x[0])
-        reminder = x[1]
-    return Formula(s[0], variable, predicate), reminder[1:]
+    if reminder:
+        if reminder[0] == EQU:
+            x = Term.parse_prefix(reminder[1:])
+            predicate = Formula(EQU, predicate, x[0])
+            reminder = x[1]
+        elif is_binary(reminder[0]):
+            x = Formula.parse_prefix(reminder[1:])
+            predicate = Formula(reminder[0], predicate, x[0])
+            reminder = x[1]
+        elif is_binary(reminder[0:2]):
+            x = Formula.parse_prefix(reminder[2:])
+            predicate = Formula(reminder[0:2], predicate, x[0])
+            reminder = x[1]
+        return Formula(s[0], variable, predicate), reminder[1:]
+    return Formula(s[0], variable, predicate), ''
 
 
 def quantifier_SAME(s):
@@ -337,7 +345,7 @@ def constant_or_variable(s):
     i, j = 1, 0
     if len(s) > 1:
         while (is_constant(s[j:i]) or is_variable((s[j:i]))) and i < len(s):
-            if is_equality(s[i]):
+            if is_equality(s[i]) or s[i] == ']':
                 j = 1
             i += 1
         if i == len(s):
