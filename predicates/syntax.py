@@ -601,8 +601,11 @@ class Formula:
         elif is_quantifier(new_func.root):
             new_map = substitution_map
             if new_func.variable in substitution_map:
-                del new_map[new_func.variable]
-            new_func.predicate = new_func.predicate.substitute(new_map)
+                x = new_map.pop(new_func.variable, None)
+                new_func.predicate = new_func.predicate.substitute(new_map)
+                new_map[new_func.variable] = x
+            else:
+                new_func.predicate = new_func.predicate.substitute(new_map)
             return new_func
         elif is_unary(new_func.root):
             new_func.first = new_func.first.substitute(substitution_map)
@@ -634,5 +637,6 @@ class Formula:
             value = PropositionalFormula(next(fresh_variable_name_generator))
             switches_dict[self] = value
             return value
+
     def variables(self):
         return self.free_variables()

@@ -21,7 +21,8 @@ def inverse_mp(proof, assumption, print_as_proof_forms=False):
     assert Schema(assumption) in proof.assumptions
     assert proof.assumptions[:len(Prover.AXIOMS)] == Prover.AXIOMS
     # Task 11.1
-    new_proof = Prover(proof.assumptions[:-1], Formula('->', Formula.parse(assumption), proof.conclusion))
+    new_proof = Prover([x for x in proof.assumptions if x.formula.infix() != assumption],
+                       Formula('->', Formula.parse(assumption), proof.conclusion))
     sub_dict = dict()
     for index, line in enumerate(proof.lines):
         if line.justification[0] is 'A':
@@ -33,41 +34,46 @@ def inverse_mp(proof, assumption, print_as_proof_forms=False):
                 mp_helper(line, new_proof, assumption, sub_dict[line.justification[1]], sub_dict[
                     line.justification[2]])
         elif line.justification[0] is 'UG':
-            sub_dict[index] = ug_helper(line, new_proof, proof, sub_dict[line.justification[1]])
+            sub_dict[index] = ug_helper(line, new_proof, sub_dict[line.justification[1]])
         else:
-            print("111111111111111111111111111111111111111111111111111111111111111111111111111111")
-    return new_proof
+            print("1111111111111111111111111111111  another case in inverse_mp     111111111111111111111")
+    return new_proof.proof
 
 
 def mp_helper(line, new_proof, ass, antecedent_line, conditional_line):
-    x = '(' + ass + '->(' + line.formula.infix() + '))'
-    return new_proof.add_tautological_inference(x, [antecedent_line, conditional_line])
+    conclusion = '(' + ass + '->(' + line.formula.infix() + '))'
+    return new_proof.add_tautological_inference(conclusion, [antecedent_line, conditional_line])
+
+
 # (plus(a,c)=a->(plus(plus(z6,z7),z)=plus(z6,plus(z7,z))))
 
 def t_helper(line, new_proof):
     return new_proof.add_tautology(line.formula)
 
 
-def ug_helper(line, new_proof, old_proof, just):
-    quantified = 'Ax[' + new_proof.proof.lines[just].formula.infix() + ']'
+def ug_helper(line, new_proof, just):
+    sign = line.formula.variable
+    quantified = 'A' + sign + '[' + new_proof.proof.lines[just].formula.infix() + ']'
     q = new_proof.proof.lines[just].formula.first.infix()
     r = new_proof.proof.lines[just].formula.second.infix()
     step1 = new_proof.add_ug(quantified, just)
-    step2 = new_proof.add_instantiated_assumption(
-        '(' + '(Ax[(' + q + '->' + r + ')]->(' + q + '->Ax[' + r + ']))' + ')', Prover.US,
-        {'x': 'x', 'Q()': q, 'R(v)': r})
-    return new_proof.add_mp('(' + q + '->Ax[' + r + '])', step1, step2)
+    con = '((A' + sign + '[(' + q + '->' + r + ')]->(' + q + '->A' + sign + '[' + r + '])))'
+    r2 = new_proof.proof.lines[just].formula.second.substitute({sign: Term('v')}).infix()
+    step2 = new_proof.add_instantiated_assumption(con, Prover.US, {'x': sign, 'Q()': q, 'R(v)': r2})
+    return new_proof.add_mp('(' + q + '->A' + sign + '[' + r + '])', step1, step2)
 
+
+# ((Ay[(Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]->(Ax[Ey[Loves(x,y)]]->(Loves(x,y)->Loves(z,x))))]
+# ->(Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]->Ay[(Ax[Ey[Loves(x,y)]]->(Loves(x,y)->Loves(z,x)))])))
 
 def a_helper(line, new_proof, old_proof, assumption):
-    if line.justification[1] == len(new_proof.proof.assumptions):
+    if old_proof.assumptions[line.justification[1]].formula.infix() == assumption:
         x = line.formula.infix()
         return new_proof.add_tautology('(' + assumption + '->' + x + ')')
     else:
         x = line.formula.infix()
         step1 = new_proof.add_instantiated_assumption(
             line.formula, old_proof.assumptions[line.justification[1]], line.justification[2])
-
         step2 = new_proof.add_tautology('(' + x + '->(' + assumption + '->' + x + '))')
         return new_proof.add_mp('(' + assumption + '->' + x + ')', step1, step2)
 

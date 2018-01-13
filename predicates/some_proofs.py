@@ -133,7 +133,7 @@ def multiply_zero_proof(print_as_proof_forms=False):
     step17 = prover.add_flipped_equality('times(x,0)=0', step16)
     step18 = prover.add_assumption('times(x,y)=times(y,x)')
     step19 = prover.add_free_instantiation('times(0,x)=times(x,0)', step18, {'x': '0', 'y': 'x'})
-    step20 = prover.add_chained_equality('times(0,x)=0', [step19,step17])
+    step20 = prover.add_chained_equality('times(0,x)=0', [step19, step17])
     return prover.proof
 
 
