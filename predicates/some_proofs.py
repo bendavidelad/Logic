@@ -126,7 +126,6 @@ def multiply_zero_proof(print_as_proof_forms=False):
         'plus(minus(times(x,0)),plus(times(x,0),times(x,0)))='
         'plus(plus(minus(times(x,0)),times(x,0)),times(x,0))',
         step12, {'x': 'minus(times(x,0))', 'y': 'times(x,0)', 'z': 'times(x,0)'})
-
     step14 = prover.add_substituted_equality(
         'plus(plus(minus(times(x,0)),times(x,0)),times(x,0))=plus(0,times(x,0))', step8, 'plus(v,times(x,0))')
     step15 = prover.add_free_instantiation('plus(0,times(x,0))=times(x,0)', step1, {'x': 'times(x,0)'})
