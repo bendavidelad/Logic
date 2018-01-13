@@ -100,8 +100,9 @@ def proof_by_contradiction(proof, assumption, print_as_proof_forms=False):
     neg_assumption = Formula("~", Formula.parse(assumption))
     first_applies = Formula("->", Formula.parse(assumption), contradiction)
     second_applies = Formula("->", neg_contradiction, neg_assumption)
-    step2 = new_prover.add_tautology(str(Formula("->", first_applies, second_applies)))
+    step2 = new_prover.add_tautology(Formula("->", first_applies, second_applies))
     step3 = new_prover.add_mp(second_applies, step1, step2)
-    step4 = new_prover.add_tautology(str(neg_contradiction))
+    step4 = new_prover.add_tautology(neg_contradiction)
     step5 = new_prover.add_mp(neg_assumption, step4, step3)
+    new_prover.proof.conclusion = new_prover.proof.lines[step5].formula
     return new_prover.proof
