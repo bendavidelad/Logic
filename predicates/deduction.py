@@ -92,3 +92,16 @@ def proof_by_contradiction(proof, assumption, print_as_proof_forms=False):
     assert Schema(assumption) in proof.assumptions
     assert proof.assumptions[:len(Prover.AXIOMS)] == Prover.AXIOMS
     # Task 11.2
+    new_proof = inverse_mp(proof, assumption)
+    new_prover = Prover(new_proof.assumptions, new_proof.conclusion)
+    step1 = new_prover.add_proof(new_proof.conclusion, new_proof)
+    contradiction = new_proof.conclusion.second
+    neg_contradiction = Formula("~", contradiction)
+    neg_assumption = Formula("~", Formula.parse(assumption))
+    first_applies = Formula("->", Formula.parse(assumption), contradiction)
+    second_applies = Formula("->", neg_contradiction, neg_assumption)
+    step2 = new_prover.add_tautology(str(Formula("->", first_applies, second_applies)))
+    step3 = new_prover.add_mp(second_applies, step1, step2)
+    step4 = new_prover.add_tautology(str(neg_contradiction))
+    step5 = new_prover.add_mp(neg_assumption, step4, step3)
+    return new_prover.proof
