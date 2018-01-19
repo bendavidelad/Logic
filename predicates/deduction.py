@@ -35,8 +35,6 @@ def inverse_mp(proof, assumption, print_as_proof_forms=False):
                     line.justification[2]])
         elif line.justification[0] is 'UG':
             sub_dict[index] = ug_helper(line, new_proof, sub_dict[line.justification[1]])
-        else:
-            print("1111111111111111111111111111111  another case in inverse_mp     111111111111111111111")
     return new_proof.proof
 
 
@@ -44,8 +42,6 @@ def mp_helper(line, new_proof, ass, antecedent_line, conditional_line):
     conclusion = '(' + ass + '->(' + line.formula.infix() + '))'
     return new_proof.add_tautological_inference(conclusion, [antecedent_line, conditional_line])
 
-
-# (plus(a,c)=a->(plus(plus(z6,z7),z)=plus(z6,plus(z7,z))))
 
 def t_helper(line, new_proof):
     return new_proof.add_tautology(line.formula)
@@ -62,9 +58,6 @@ def ug_helper(line, new_proof, just):
     step2 = new_proof.add_instantiated_assumption(con, Prover.US, {'x': sign, 'Q()': q, 'R(v)': r2})
     return new_proof.add_mp('(' + q + '->A' + sign + '[' + r + '])', step1, step2)
 
-
-# ((Ay[(Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]->(Ax[Ey[Loves(x,y)]]->(Loves(x,y)->Loves(z,x))))]
-# ->(Ax[Az[Ay[(Loves(x,y)->Loves(z,x))]]]->Ay[(Ax[Ey[Loves(x,y)]]->(Loves(x,y)->Loves(z,x)))])))
 
 def a_helper(line, new_proof, old_proof, assumption):
     if old_proof.assumptions[line.justification[1]].formula.infix() == assumption:
