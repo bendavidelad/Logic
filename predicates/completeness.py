@@ -9,6 +9,7 @@ from predicates.proofs import *
 from predicates.prover import *
 from predicates.prenex import *
 from predicates.util import *
+from itertools import product
 
 
 def is_closed(sentences, constants):
@@ -26,31 +27,53 @@ def is_closed(sentences, constants):
 def is_primitively_closed(sentences, constants):
     """ Return whether the given set of prenex-normal-form sentences is
         primitively closed with respect to the given set of constant names """
-    for sentence in sentences:
-        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+    # Task 12.1.1
     for constant in constants:
         assert is_constant(constant)
-    # Task 12.1.1
+    used_set = set()
+    for sentence in sentences:
+        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+        for g in sentence.relations():
+            if g[0] not in used_set:
+                used_set.add(g[0])
+                for names in list(product(constants, repeat=g[1])):
+                    check = Formula(g[0], [Term(i) for i in names])
+                    if check not in sentences and Formula('~', check) not in sentences:
+                        return False
+    return True
 
 
 def is_universally_closed(sentences, constants):
     """ Return whether the given set of prenex-normal-form sentences is
         universally closed with respect to the given set of constant names """
-    for sentence in sentences:
-        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+    # Task 12.1.2
     for constant in constants:
         assert is_constant(constant)
-    # Task 12.1.2
+    for sentence in sentences:
+        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+        if sentence.root == "A":
+            for con in constants:
+                if sentence.predicate.substitute({sentence.variable: Term(con)}) not in sentences:
+                    return False
+    return True
 
 
 def is_existentially_closed(sentences, constants):
     """ Return whether the given set of prenex-normal-form sentences is
         existentially closed with respect to the given set of constant names """
-    for sentence in sentences:
-        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+    # Task 12.1.3
     for constant in constants:
         assert is_constant(constant)
-    # Task 12.1.3
+    for sentence in sentences:
+        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+        if sentence.root == "E":
+            check = False
+            for con in constants:
+                if sentence.predicate.substitute({sentence.variable: Term(con)}) in sentences:
+                    check = True
+            if not check:
+                return check
+    return True
 
 
 def find_unsatisfied_quantifier_free_sentence(sentences, constants, model,

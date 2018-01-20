@@ -97,8 +97,7 @@ def _test_is_closed(test_primitively=False, test_universally=False,
         if debug:
             print('Testing is_closed for the six-element',
                   'non-commutative'
-                  if six_element_group_primitives ==
-                     SIX_ELEMENT_NON_COMMUTATIVE_GROUP_PRIMITIVES
+                  if six_element_group_primitives == SIX_ELEMENT_NON_COMMUTATIVE_GROUP_PRIMITIVES
                   else 'commutative',
                   'group...')
         if debug:
