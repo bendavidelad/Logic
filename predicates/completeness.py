@@ -76,8 +76,7 @@ def is_existentially_closed(sentences, constants):
     return True
 
 
-def find_unsatisfied_quantifier_free_sentence(sentences, constants, model,
-                                              unsatisfied):
+def find_unsatisfied_quantifier_free_sentence(sentences, constants, model, unsatisfied):
     """ Given a set of prenex-normal-form sentences that is closed with respect
         to the given set of constants names, given a model whose universe is
         the given set of constant names, and given a sentence (which possibly
@@ -94,6 +93,17 @@ def find_unsatisfied_quantifier_free_sentence(sentences, constants, model,
     assert unsatisfied in sentences
     assert not model.evaluate_formula(unsatisfied)
     # Task 12.2
+    if unsatisfied.root == "A":
+        for con in constants:
+            x = unsatisfied.predicate.substitute({unsatisfied.variable: Term(con)})
+            if not model.evaluate_formula(x):
+                return find_unsatisfied_quantifier_free_sentence(sentences, constants, model, x)
+    elif unsatisfied.root == "E":
+        for con in constants:
+            x = unsatisfied.predicate.substitute({unsatisfied.variable: Term(con)})
+            if x in sentences:
+                return find_unsatisfied_quantifier_free_sentence(sentences, constants, model, x)
+    return unsatisfied
 
 
 def get_primitives(quantifier_free):
