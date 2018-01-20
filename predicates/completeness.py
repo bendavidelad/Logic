@@ -10,6 +10,7 @@ from predicates.prover import *
 from predicates.prenex import *
 from predicates.util import *
 from itertools import product
+from predicates.deduction import *
 
 
 def is_closed(sentences, constants):
@@ -111,9 +112,14 @@ def get_primitives(quantifier_free):
         instantiations) that appear in the given quantifier-free formula. For
         example, if quantifier_free is '(R(c1,d)|~(Q(c1)->~R(c2,a))', then the
         returned set should be {'R(c1,d)', 'Q(c1)', 'R(c2,a)'} """
-    assert type(quantifier_free) is Formula and \
-           is_quantifier_free(quantifier_free)
+    assert type(quantifier_free) is Formula and is_quantifier_free(quantifier_free)
     # Task 12.3.1
+    if is_relation(quantifier_free.root):
+        return {quantifier_free}
+    elif is_binary(quantifier_free.root):
+        return get_primitives(quantifier_free.first) | get_primitives(quantifier_free.second)
+    elif is_unary(quantifier_free.root):
+        return get_primitives(quantifier_free.first)
 
 
 def model_or_inconsistent(sentences, constants):
@@ -123,6 +129,39 @@ def model_or_inconsistent(sentences, constants):
         sentences as assumptions """
     assert is_closed(sentences, constants)
     # Task 12.3.2
+    meaning = dict()
+    for sen in sentences:
+        if is_relation(sen.root):
+            if sen.root in meaning.keys():
+                meaning[sen.root].add(tuple(sen.arguments))
+            else:
+                meaning[sen.root] = {tuple(sen.arguments)}
+    for con in constants:
+        meaning[con] = con
+    model = Model(constants, meaning)
+    for sen2 in sentences:
+        if not model.evaluate_formula(sen2):
+            quantifier_free = find_unsatisfied_quantifier_free_sentence(sentences, constants, model, sen2)
+            return prove_contradiction(quantifier_free, sentences)
+    return model
+
+
+def prove_contradiction(quantifier_free, sentences):
+    primitives = get_primitives(quantifier_free)
+    for x in primitives:
+        if x not in sentences:
+            primitives.remove(x)
+            primitives.add(Formula('~', x))
+    quantifier_free_n = Formula('~', quantifier_free)
+    goal = Formula('&', quantifier_free, quantifier_free_n).infix()
+    prover = Prover([Schema(x.infix()) for x in sentences], goal)
+    for i in primitives:
+        prover.add_assumption(i)
+    step1 = prover.add_tautological_inference(quantifier_free_n.infix(), [i for i in range(len(primitives))])
+    step2 = prover.add_assumption(quantifier_free)
+    prover.add_tautological_inference(goal, [step1, step2])
+
+    return prover.proof
 
 
 def combine_contradictions(proof_true, proof_false):

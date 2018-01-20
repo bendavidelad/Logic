@@ -564,9 +564,9 @@ SIX_ELEMENT_NEGATION_CLOSURE = {'Ey[Plus(0,y,0)]', 'Ey[Plus(0,y,1)]', 'Ey[Plus(0
                                 'Ey[Plus(0,y,3)]', 'Ey[Plus(0,y,4)]', 'Ey[Plus(0,y,5)]'}
 SIX_ELEMENT_COMMUTATIVITY_CLOSURE = {
     'Ay[Az[(Plus(z,0,y)->Plus(z,y,0))]]', 'Ay[Az[(Plus(z,1,y)->Plus(z,y,1))]]',
-'Ay[Az[(Plus(z,2,y)->Plus(z,y,2))]]',
+    'Ay[Az[(Plus(z,2,y)->Plus(z,y,2))]]',
     'Ay[Az[(Plus(z,3,y)->Plus(z,y,3))]]', 'Ay[Az[(Plus(z,4,y)->Plus(z,y,4))]]',
-'Ay[Az[(Plus(z,5,y)->Plus(z,y,5))]]',
+    'Ay[Az[(Plus(z,5,y)->Plus(z,y,5))]]',
     'Az[(Plus(z,0,0)->Plus(z,0,0))]', 'Az[(Plus(z,0,1)->Plus(z,1,0))]', 'Az[(Plus(z,0,2)->Plus(z,2,0))]',
     'Az[(Plus(z,0,3)->Plus(z,3,0))]', 'Az[(Plus(z,0,4)->Plus(z,4,0))]', 'Az[(Plus(z,0,5)->Plus(z,5,0))]',
     'Az[(Plus(z,1,0)->Plus(z,0,1))]', 'Az[(Plus(z,1,1)->Plus(z,1,1))]', 'Az[(Plus(z,1,2)->Plus(z,2,1))]',
