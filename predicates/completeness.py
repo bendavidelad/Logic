@@ -295,16 +295,19 @@ def eliminate_existential_witness_assumption(proof, constant):
                {proof.assumptions[-2].formula.variable: Term(constant)})
     # Task 12.8
     proof_start = proof_by_contradiction(proof, str(proof.assumptions[-1].formula))
-    prover = Prover(proof_start.assumptions, 'Ax[Az[Loves(z,x)]]')
-    step1 = prover.add_proof(proof_start.conclusion, proof_start)
-    step2 = prover.add_free_instantiation(proof_start.conclusion, len(proof_start.lines) - 1, {constant: 'x'})
-    phi_of_x = prover.proof.lines[-1].formula.first
+    replaced_proof = replace_constant(proof_start, constant)
+    prover = Prover(replaced_proof.assumptions, 'Ax[Az[Loves(z,x)]]')
+    step1 = prover.add_proof(replaced_proof.conclusion, replaced_proof)
+    step2 = prover.add_free_instantiation(proof_start.conclusion.root + proof_start.conclusion.first.root + '(x)',
+                                          len(proof_start.lines) - 1, {'zz': 'x'})
+    phi_of_x = str(prover.proof.lines[-1].formula.first)
     exist_x = 'Ex[' + phi_of_x + ']'
     neg_exist_x = '~' + exist_x
-    step3 = prover.add_tautological_inference(phi_of_x + '->' + neg_exist_x, len(prover.proof.lines) - 1)
-    step4 = prover.add_assumption(prover.proof.assumptions[-1])
+    step3 = prover.add_tautological_inference('(' + phi_of_x + '->' + neg_exist_x + ')', [len(prover.proof.lines) - 1])
+    step4 = prover.add_assumption(prover.proof.assumptions[-1].formula)
     step5 = prover.add_existential_derivation(neg_exist_x, step4, step3)
-    step6 = prover.add_tautological_inference(exist_x + '&' + neg_exist_x, [step4, step5])
+    step6 = prover.add_tautological_inference('(' + exist_x + '&' + neg_exist_x + ')', [step4, step5])
+    prover.proof.conclusion = prover.proof.lines[-1].formula
     return prover.proof
 
 
@@ -322,3 +325,22 @@ def existentially_close(sentences, constants):
     for constant in constants:
         assert is_constant(constant)
     # Task 12.9
+    if not sentences:
+        return sentences
+    new_sentences = copy.deepcopy(sentences)
+    new_constants = copy.deepcopy(constants)
+    second_sentences = set()
+    second_constants = set()
+    for sentence in sentences:
+        if sentence.root == 'E' and sentence.predicate is not None and sentence.predicate.root == 'E':
+            fresh_const = next(fresh_constant_name_generator)
+            new_constants.add(fresh_const)
+            second_sentences.add(sentence.predicate.substitute({sentence.variable: Term(fresh_const)}))
+            second_new_sentences, second_new_constants = existentially_close(second_sentences, second_constants)
+            new_sentences = new_sentences | second_new_sentences
+            new_constants = new_constants | second_new_constants
+        elif sentence.root == 'E':
+            fresh_const = next(fresh_constant_name_generator)
+            new_constants.add(fresh_const)
+            new_sentences.add(sentence.predicate.substitute({sentence.variable: Term(fresh_const)}))
+    return new_sentences, new_constants
