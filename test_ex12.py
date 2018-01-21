@@ -4,6 +4,7 @@
     File name: code/test_ex12.py """
 
 from predicates.completeness_test import *
+import time
 
 
 def test_task1(debug=False):
@@ -44,12 +45,15 @@ def test_task9(debug=False):
     test_existentially_close(debug)
 
 
+start = time.time()
 test_task1(True)
 test_task2(True)
 test_task3(True)
-# test_task4(True)
-# test_task5(True)
-# test_task6(True)
+test_task4(True)
+test_task5(True)
+test_task6(True)
 # test_task7(True)
 # test_task8(True)
 # test_task9(True)
+end = time.time()
+print(end - start)

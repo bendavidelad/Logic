@@ -139,9 +139,9 @@ def model_or_inconsistent(sentences, constants):
     for con in constants:
         meaning[con] = con
     model = Model(constants, meaning)
-    for sen2 in sentences:
-        if not model.evaluate_formula(sen2):
-            quantifier_free = find_unsatisfied_quantifier_free_sentence(sentences, constants, model, sen2)
+    for sentence in sentences:
+        if not model.evaluate_formula(sentence):
+            quantifier_free = find_unsatisfied_quantifier_free_sentence(sentences, constants, model, sentence)
             return prove_contradiction(quantifier_free, sentences)
     return model
 
@@ -160,7 +160,6 @@ def prove_contradiction(quantifier_free, sentences):
     step1 = prover.add_tautological_inference(quantifier_free_n.infix(), [i for i in range(len(primitives))])
     step2 = prover.add_assumption(quantifier_free)
     prover.add_tautological_inference(goal, [step1, step2])
-
     return prover.proof
 
 
@@ -177,14 +176,20 @@ def combine_contradictions(proof_true, proof_false):
     assert proof_true.assumptions[:-1] == proof_false.assumptions[:-1]
     assert proof_false.assumptions[-1].templates == set()
     assert proof_true.assumptions[-1].templates == set()
-    assert proof_false.assumptions[-1].formula == \
-           Formula('~', proof_true.assumptions[-1].formula)
-    # Task 12.4
+    assert proof_false.assumptions[-1].formula == Formula('~', proof_true.assumptions[-1].formula)
+    proof1 = proof_by_contradiction(proof_true, proof_true.assumptions[-1].formula.infix())
+    proof2 = proof_by_contradiction(proof_false, proof_false.assumptions[-1].formula.infix())
+    goal = Formula('&', proof1.conclusion, proof2.conclusion).infix()
+    prover = Prover(proof_true.assumptions[:-1], goal)
+    step1 = prover.add_proof(proof1.conclusion, proof1)
+    step2 = prover.add_proof(proof2.conclusion, proof2)
+    prover.add_tautological_inference(goal, [step1, step2])
+    return prover.proof
 
 
 def eliminate_universal_instance_assumption(proof, constant):
     """ Given a proof of a contradiction from a list of assumptions, where the
-        last assumption is an instantiation of the form 'formula(consatnt)'
+        last assumption is an instantiation of the form 'formula(constant)'
         (for the given constant name) of the universal assumption of the form
         'Ax[formula(x)]' that immediately precedes it, return a proof of a
         contradiction from the same assumptions without the last (universally
@@ -195,10 +200,18 @@ def eliminate_universal_instance_assumption(proof, constant):
     assert proof.assumptions[-2].templates == set()
     assert proof.assumptions[-1].templates == set()
     assert proof.assumptions[-2].formula.root == "A"
-    assert proof.assumptions[-1].formula == \
-           proof.assumptions[-2].formula.predicate.substitute(
-               {proof.assumptions[-2].formula.variable: Term(constant)})
+    assert proof.assumptions[-1].formula == proof.assumptions[-2].formula.predicate.substitute(
+        {proof.assumptions[-2].formula.variable: Term(constant)})
     # Task 12.5
+    new_proof = proof_by_contradiction(proof, proof.assumptions[-1].formula.infix())
+    temp = new_proof.conclusion.infix()
+    goal = '(~' + temp + '&' + temp + ')'
+    prover = Prover(new_proof.assumptions, goal)
+    step1 = prover.add_proof(new_proof.conclusion, new_proof)
+    step2 = prover.add_assumption(new_proof.assumptions[-1].formula.infix())
+    step3 = prover.add_universal_instantiation(proof.assumptions[-1].formula.infix(), step2, constant)
+    prover.add_tautological_inference(goal, [step1, step3])
+    return prover.proof
 
 
 def universally_close(sentences, constants):
@@ -208,11 +221,25 @@ def universally_close(sentences, constants):
         singleton {'Ax[Ay[R(x,y)]]'} and constants is {a,b}, then the returned
         set should be: {'Ax[Ay[R(x,y)]]', 'Ay[R(a,y)]', 'Ay[R(b,y)]', 'R(a,a)',
         'R(a,b)', 'R(b,a)', 'R(b,b)'} """
-    for sentence in sentences:
-        assert type(sentence) is Formula and is_in_prenex_normal_form(sentence)
+    for sentence1 in sentences:
+        assert type(sentence1) is Formula and is_in_prenex_normal_form(sentence1)
     for constant in constants:
         assert is_constant(constant)
     # Task 12.6
+    if not sentences:
+        return sentences
+    ret = copy.deepcopy(sentences)
+    second = set()
+    for sentence in sentences:
+        if sentence.root == 'A':
+            for con in constants:
+                r_d = {sentence.variable: Term(con)}
+                temp = sentence.predicate.substitute(r_d)
+                ret.add(temp)
+                if sentence.predicate.root == 'A':
+                    second.add(temp)
+
+    return ret | universally_close(second, constants)
 
 
 def replace_constant(proof, constant, variable='zz'):
