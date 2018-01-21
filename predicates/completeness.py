@@ -9,6 +9,7 @@ from predicates.proofs import *
 from predicates.prover import *
 from predicates.prenex import *
 from predicates.util import *
+from predicates.deduction import *
 from itertools import product
 from predicates.deduction import *
 
@@ -254,6 +255,25 @@ def replace_constant(proof, constant, variable='zz'):
     assert is_variable(variable)
     assert type(proof) is Proof
     # Task 12.7
+    new_assumptions = list()
+    substituion_map = {constant: Term.parse(variable)}
+    for assump in proof.assumptions:
+        new_assumptions.append(Schema(str(assump.formula.substitute(substituion_map)), assump.templates))
+    new_conclusion = proof.conclusion.substitute(substituion_map)
+    new_lines = list()
+    for line in proof.lines:
+        new_formula = line.formula.substitute(substituion_map)
+        new_justification = line.justification
+        if line.justification[0] == 'A':
+            if len(line.justification[2]) > 0:
+                new_dict = copy.deepcopy(line.justification[2])
+                for key, value in new_dict.items():
+                    new_dict[key] = value.replace(constant, variable)
+                new_justification = (line.justification[0], line.justification[1], new_dict)
+        new_lines.append(Proof.Line(new_formula, new_justification))
+    new_proof = Proof(new_assumptions, new_conclusion, new_lines)
+    return new_proof
+
 
 
 def eliminate_existential_witness_assumption(proof, constant):
@@ -274,6 +294,18 @@ def eliminate_existential_witness_assumption(proof, constant):
            proof.assumptions[-2].formula.predicate.substitute(
                {proof.assumptions[-2].formula.variable: Term(constant)})
     # Task 12.8
+    proof_start = proof_by_contradiction(proof, str(proof.assumptions[-1].formula))
+    prover = Prover(proof_start.assumptions, 'Ax[Az[Loves(z,x)]]')
+    step1 = prover.add_proof(proof_start.conclusion, proof_start)
+    step2 = prover.add_free_instantiation(proof_start.conclusion, len(proof_start.lines) - 1, {constant: 'x'})
+    phi_of_x = prover.proof.lines[-1].formula.first
+    exist_x = 'Ex[' + phi_of_x + ']'
+    neg_exist_x = '~' + exist_x
+    step3 = prover.add_tautological_inference(phi_of_x + '->' + neg_exist_x, len(prover.proof.lines) - 1)
+    step4 = prover.add_assumption(prover.proof.assumptions[-1])
+    step5 = prover.add_existential_derivation(neg_exist_x, step4, step3)
+    step6 = prover.add_tautological_inference(exist_x + '&' + neg_exist_x, [step4, step5])
+    return prover.proof
 
 
 def existentially_close(sentences, constants):

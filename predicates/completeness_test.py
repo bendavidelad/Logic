@@ -764,3 +764,5 @@ SIX_ELEMENT_NON_COMMUTATIVE_GROUP_MODEL = Model(
               ('0', '4', '5'),
               ('5', '5', '0'), ('3', '5', '1'), ('1', '5', '2'), ('2', '5', '3'), ('0', '5', '4'),
               ('4', '5', '5')}})
+
+test_eliminate_existential_witness_assumption(True)
